@@ -1,0 +1,670 @@
+53 files match the scoped subset.
+
+[1/53] downloading: calib_cam_stereo_left.json
+  done: 1.1KB (total so far: 1.1KB, elapsed: 0.0 min)
+[2/53] downloading: calib_cam_stereo_right.json
+  done: 1.1KB (total so far: 2.2KB, elapsed: 0.0 min)
+[3/53] downloading: calib_gated_bwv.json
+  done: 1.0KB (total so far: 3.3KB, elapsed: 0.0 min)
+[4/53] downloading: calib_tf_tree_full.json
+  done: 17.8KB (total so far: 21.0KB, elapsed: 0.1 min)
+[5/53] downloading: cam_stereo_left/cam_stereo_left.z01
+79 files match the scoped subset.
+
+[1/79] skip (exists): calib_cam_stereo_left.json
+[2/79] skip (exists): calib_cam_stereo_right.json
+[3/79] skip (exists): calib_gated_bwv.json
+[4/79] skip (exists): calib_tf_tree_full.json
+[5/79] downloading: cam_stereo_left/cam_stereo_left.z01
+Traceback (most recent call last):
+  File "/Users/dipinjassal/298A/download_stf_subset.py", line 141, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/dipinjassal/298A/download_stf_subset.py", line 128, in main
+    size = download_one(e["url"], dest)
+  File "/Users/dipinjassal/298A/download_stf_subset.py", line 81, in download_one
+    chunk = resp.read(chunk_size)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 479, in read
+    s = self.fp.read(amt)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/ssl.py", line 1304, in recv_into
+    return self.read(nbytes, buffer)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/ssl.py", line 1138, in read
+    return self._sslobj.read(len, buffer)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+TimeoutError: The read operation timed out
+79 files match the scoped subset.
+
+[1/79] skip (exists): calib_cam_stereo_left.json
+[2/79] skip (exists): calib_cam_stereo_right.json
+[3/79] skip (exists): calib_gated_bwv.json
+[4/79] skip (exists): calib_tf_tree_full.json
+[5/79] downloading: cam_stereo_left/cam_stereo_left.z01
+79 files match the scoped subset.
+
+[1/79] skip (exists): calib_cam_stereo_left.json
+[2/79] skip (exists): calib_cam_stereo_right.json
+[3/79] skip (exists): calib_gated_bwv.json
+[4/79] skip (exists): calib_tf_tree_full.json
+[5/79] downloading: cam_stereo_left/cam_stereo_left.z01
+79 files match the scoped subset.
+
+[1/79] skip (exists): calib_cam_stereo_left.json
+[2/79] skip (exists): calib_cam_stereo_right.json
+[3/79] skip (exists): calib_gated_bwv.json
+[4/79] skip (exists): calib_tf_tree_full.json
+[5/79] downloading: cam_stereo_left/cam_stereo_left.z01
+79 files match the scoped subset.
+
+[1/79] skip (exists): calib_cam_stereo_left.json
+[2/79] skip (exists): calib_cam_stereo_right.json
+[3/79] skip (exists): calib_gated_bwv.json
+[4/79] skip (exists): calib_tf_tree_full.json
+[5/79] downloading: cam_stereo_left/cam_stereo_left.z01
+79 files match the scoped subset.
+
+skip (exists): calib_cam_stereo_left.json
+skip (exists): calib_cam_stereo_right.json
+skip (exists): calib_gated_bwv.json
+skip (exists): calib_tf_tree_full.json
+
+Downloading 75 file(s) with 8 concurrent workers...
+
+-> downloading: cam_stereo_left/cam_stereo_left.z01
+-> downloading: cam_stereo_left/cam_stereo_left.z03
+-> downloading: cam_stereo_left/cam_stereo_left.z06
+-> downloading: cam_stereo_left/cam_stereo_left.z04
+-> downloading: cam_stereo_left/cam_stereo_left.z05
+-> downloading: cam_stereo_left/cam_stereo_left.z02
+-> downloading: cam_stereo_left/cam_stereo_left.z07
+-> downloading: cam_stereo_left/cam_stereo_left.z08
+79 files match the scoped subset.
+
+skip (exists): calib_cam_stereo_left.json
+skip (exists): calib_cam_stereo_right.json
+skip (exists): calib_gated_bwv.json
+skip (exists): calib_tf_tree_full.json
+
+Downloading 75 file(s) with 2 concurrent workers...
+
+-> downloading: cam_stereo_left/cam_stereo_left.z01
+-> downloading: cam_stereo_left/cam_stereo_left.z02
+  ERROR on cam_stereo_left/cam_stereo_left.z01 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+  [cam_stereo_left.z01] transient error (TimeoutError('The read operation timed out')), retrying in 2s (attempt 1/5, resuming from 626.0MB)...
+  [cam_stereo_left.z02] transient error (TimeoutError('The read operation timed out')), retrying in 2s (attempt 1/5, resuming from 81.0MB)...
+  [cam_stereo_left.z01] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 4s (attempt 2/5, resuming from 971.0MB)...
+  [cam_stereo_left.z02] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 4s (attempt 2/5, resuming from 264.0MB)...
+  [cam_stereo_left.z01] transient error (TimeoutError('The read operation timed out')), retrying in 8s (attempt 3/5, resuming from 1.3GB)...
+-> downloading: cam_stereo_left/cam_stereo_left.z03
+  ERROR on cam_stereo_left/cam_stereo_left.z03 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z04
+  ERROR on cam_stereo_left/cam_stereo_left.z04 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z05
+  ERROR on cam_stereo_left/cam_stereo_left.z05 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z06
+  ERROR on cam_stereo_left/cam_stereo_left.z06 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z07
+  ERROR on cam_stereo_left/cam_stereo_left.z07 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z08
+  ERROR on cam_stereo_left/cam_stereo_left.z08 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z09
+  ERROR on cam_stereo_left/cam_stereo_left.z09 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z10
+  ERROR on cam_stereo_left/cam_stereo_left.z10 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z11
+  ERROR on cam_stereo_left/cam_stereo_left.z11 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z12
+  ERROR on cam_stereo_left/cam_stereo_left.z12 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z13
+  ERROR on cam_stereo_left/cam_stereo_left.z13 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z14
+  ERROR on cam_stereo_left/cam_stereo_left.z14 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z15
+  ERROR on cam_stereo_left/cam_stereo_left.z15 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z16
+  ERROR on cam_stereo_left/cam_stereo_left.z16 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z17
+  ERROR on cam_stereo_left/cam_stereo_left.z17 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z18
+  ERROR on cam_stereo_left/cam_stereo_left.z18 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z19
+  ERROR on cam_stereo_left/cam_stereo_left.z19 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z20
+  ERROR on cam_stereo_left/cam_stereo_left.z20 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z21
+  ERROR on cam_stereo_left/cam_stereo_left.z21 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z22
+  ERROR on cam_stereo_left/cam_stereo_left.z22 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z23
+  ERROR on cam_stereo_left/cam_stereo_left.z23 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z24
+  ERROR on cam_stereo_left/cam_stereo_left.z24 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.z25
+  ERROR on cam_stereo_left/cam_stereo_left.z25 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_left/cam_stereo_left.zip
+  ERROR on cam_stereo_left/cam_stereo_left.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z01
+  ERROR on cam_stereo_right/cam_stereo_right.z01 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z02
+  ERROR on cam_stereo_right/cam_stereo_right.z02 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z03
+  ERROR on cam_stereo_right/cam_stereo_right.z03 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z04
+  ERROR on cam_stereo_right/cam_stereo_right.z04 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z05
+  ERROR on cam_stereo_right/cam_stereo_right.z05 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z06
+  ERROR on cam_stereo_right/cam_stereo_right.z06 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z07
+  ERROR on cam_stereo_right/cam_stereo_right.z07 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z08
+  ERROR on cam_stereo_right/cam_stereo_right.z08 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z09
+  ERROR on cam_stereo_right/cam_stereo_right.z09 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z10
+  ERROR on cam_stereo_right/cam_stereo_right.z10 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z11
+  ERROR on cam_stereo_right/cam_stereo_right.z11 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z12
+  ERROR on cam_stereo_right/cam_stereo_right.z12 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z13
+  ERROR on cam_stereo_right/cam_stereo_right.z13 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z14
+  ERROR on cam_stereo_right/cam_stereo_right.z14 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z15
+  ERROR on cam_stereo_right/cam_stereo_right.z15 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z16
+  ERROR on cam_stereo_right/cam_stereo_right.z16 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z17
+  ERROR on cam_stereo_right/cam_stereo_right.z17 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z18
+  ERROR on cam_stereo_right/cam_stereo_right.z18 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z19
+  ERROR on cam_stereo_right/cam_stereo_right.z19 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z20
+  ERROR on cam_stereo_right/cam_stereo_right.z20 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z21
+  ERROR on cam_stereo_right/cam_stereo_right.z21 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z22
+  ERROR on cam_stereo_right/cam_stereo_right.z22 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z23
+  ERROR on cam_stereo_right/cam_stereo_right.z23 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z24
+  ERROR on cam_stereo_right/cam_stereo_right.z24 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.z25
+  ERROR on cam_stereo_right/cam_stereo_right.z25 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: cam_stereo_right/cam_stereo_right.zip
+  ERROR on cam_stereo_right/cam_stereo_right.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: filtered_relevant_can_data/filtered_relevant_can_data.zip
+  ERROR on filtered_relevant_can_data/filtered_relevant_can_data.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: gt_labels/cam_left_labels_TMP.zip
+  ERROR on gt_labels/cam_left_labels_TMP.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: gt_labels/gated_labels_TMPv2.zip
+  ERROR on gt_labels/gated_labels_TMPv2.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: labeltool_labels/labeltool_labels.zip
+  ERROR on labeltool_labels/labeltool_labels.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: labeltool_labels/labeltool_labels_refined.zip
+  ERROR on labeltool_labels/labeltool_labels_refined.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z01
+  ERROR on lidar_hdl64_last/lidar_hdl64_last.z01 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z02
+  ERROR on lidar_hdl64_last/lidar_hdl64_last.z02 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z03
+  ERROR on lidar_hdl64_last/lidar_hdl64_last.z03 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z04
+  ERROR on lidar_hdl64_last/lidar_hdl64_last.z04 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z05
+  ERROR on lidar_hdl64_last/lidar_hdl64_last.z05 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z06
+  ERROR on lidar_hdl64_last/lidar_hdl64_last.z06 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.zip
+  ERROR on lidar_hdl64_last/lidar_hdl64_last.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z01
+  ERROR on lidar_hdl64_strongest/lidar_hdl64_strongest.z01 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z02
+  ERROR on lidar_hdl64_strongest/lidar_hdl64_strongest.z02 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z03
+  ERROR on lidar_hdl64_strongest/lidar_hdl64_strongest.z03 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z04
+  ERROR on lidar_hdl64_strongest/lidar_hdl64_strongest.z04 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z05
+  ERROR on lidar_hdl64_strongest/lidar_hdl64_strongest.z05 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z06
+  ERROR on lidar_hdl64_strongest/lidar_hdl64_strongest.z06 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.zip
+  ERROR on lidar_hdl64_strongest/lidar_hdl64_strongest.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: radar_targets/.DS_Store
+  ERROR on radar_targets/.DS_Store after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: radar_targets/radar_targets.zip
+  ERROR on radar_targets/radar_targets.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: road_friction/road_friction.zip
+  ERROR on road_friction/road_friction.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+-> downloading: weather_station/weather_station.zip
+  ERROR on weather_station/weather_station.zip after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+  ERROR on cam_stereo_left/cam_stereo_left.z02 after 5 retries: URLError(gaierror(8, 'nodename nor servname provided, or not known')) -- rerun the script to retry.
+  [cam_stereo_left.z02] transient error (TimeoutError('The read operation timed out')), retrying in 8s (attempt 3/5, resuming from 948.0MB)...
+
+Finished. Total downloaded: 21.0KB into data/stf
+79 files match the scoped subset.
+
+skip (exists): calib_cam_stereo_left.json
+skip (exists): calib_cam_stereo_right.json
+skip (exists): calib_gated_bwv.json
+skip (exists): calib_tf_tree_full.json
+
+Downloading 75 file(s) with 2 concurrent workers...
+
+-> downloading: cam_stereo_left/cam_stereo_left.z01
+-> downloading: cam_stereo_left/cam_stereo_left.z02
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z01 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z03
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z02 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z04
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z03 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z05
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z04 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z06
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z06 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z07
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z05 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z08
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z07 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z09
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z08 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z10
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z10 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z11
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z09 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z12
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z11 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z13
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z12 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z14
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z14 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z15
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z13 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z16
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z15 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z17
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z16 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z18
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z17 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z19
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z18 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z20
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z19 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z21
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z20 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z22
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z21 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z23
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z22 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z24
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z23 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.z25
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z24 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_left/cam_stereo_left.zip
+  ERROR 400 on cam_stereo_left/cam_stereo_left.z25 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z01
+  ERROR 400 on cam_stereo_left/cam_stereo_left.zip -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z02
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z01 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z03
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z02 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z04
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z04 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z05
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z03 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z06
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z05 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z07
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z06 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z08
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z08 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z09
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z07 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z10
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z10 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z11
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z11 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z12
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z09 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z13
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z12 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z14
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z13 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z15
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z14 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z16
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z15 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z17
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z16 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z18
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z17 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z19
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z18 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z20
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z19 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z21
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z20 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z22
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z21 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z23
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z22 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z24
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z23 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.z25
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z24 -- the pre-signed URL may have expired.
+-> downloading: cam_stereo_right/cam_stereo_right.zip
+  ERROR 400 on cam_stereo_right/cam_stereo_right.z25 -- the pre-signed URL may have expired.
+-> downloading: filtered_relevant_can_data/filtered_relevant_can_data.zip
+  ERROR 400 on cam_stereo_right/cam_stereo_right.zip -- the pre-signed URL may have expired.
+-> downloading: gt_labels/cam_left_labels_TMP.zip
+  ERROR 400 on filtered_relevant_can_data/filtered_relevant_can_data.zip -- the pre-signed URL may have expired.
+-> downloading: gt_labels/gated_labels_TMPv2.zip
+  ERROR 400 on gt_labels/cam_left_labels_TMP.zip -- the pre-signed URL may have expired.
+-> downloading: labeltool_labels/labeltool_labels.zip
+  ERROR 400 on gt_labels/gated_labels_TMPv2.zip -- the pre-signed URL may have expired.
+-> downloading: labeltool_labels/labeltool_labels_refined.zip
+  ERROR 400 on labeltool_labels/labeltool_labels.zip -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z01
+  ERROR 400 on labeltool_labels/labeltool_labels_refined.zip -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z02
+  ERROR 400 on lidar_hdl64_last/lidar_hdl64_last.z01 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z03
+  ERROR 400 on lidar_hdl64_last/lidar_hdl64_last.z02 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z04
+  ERROR 400 on lidar_hdl64_last/lidar_hdl64_last.z03 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z05
+  ERROR 400 on lidar_hdl64_last/lidar_hdl64_last.z04 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z06
+  ERROR 400 on lidar_hdl64_last/lidar_hdl64_last.z05 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.zip
+  ERROR 400 on lidar_hdl64_last/lidar_hdl64_last.z06 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z01
+  ERROR 400 on lidar_hdl64_last/lidar_hdl64_last.zip -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z02
+  ERROR 400 on lidar_hdl64_strongest/lidar_hdl64_strongest.z01 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z03
+  ERROR 400 on lidar_hdl64_strongest/lidar_hdl64_strongest.z02 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z04
+  ERROR 400 on lidar_hdl64_strongest/lidar_hdl64_strongest.z03 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z05
+  ERROR 400 on lidar_hdl64_strongest/lidar_hdl64_strongest.z04 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z06
+  ERROR 400 on lidar_hdl64_strongest/lidar_hdl64_strongest.z05 -- the pre-signed URL may have expired.
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.zip
+  ERROR 400 on lidar_hdl64_strongest/lidar_hdl64_strongest.z06 -- the pre-signed URL may have expired.
+-> downloading: radar_targets/.DS_Store
+  ERROR 400 on lidar_hdl64_strongest/lidar_hdl64_strongest.zip -- the pre-signed URL may have expired.
+-> downloading: radar_targets/radar_targets.zip
+  ERROR 400 on radar_targets/.DS_Store -- the pre-signed URL may have expired.
+-> downloading: road_friction/road_friction.zip
+  ERROR 400 on radar_targets/radar_targets.zip -- the pre-signed URL may have expired.
+-> downloading: weather_station/weather_station.zip
+  ERROR 400 on road_friction/road_friction.zip -- the pre-signed URL may have expired.
+  ERROR 400 on weather_station/weather_station.zip -- the pre-signed URL may have expired.
+
+Finished. Total downloaded: 21.0KB into data/stf
+79 files match the scoped subset.
+
+skip (exists): calib_cam_stereo_left.json
+skip (exists): calib_cam_stereo_right.json
+skip (exists): calib_gated_bwv.json
+skip (exists): calib_tf_tree_full.json
+
+Downloading 75 file(s) with 2 concurrent workers...
+
+-> downloading: cam_stereo_left/cam_stereo_left.z01
+-> downloading: cam_stereo_left/cam_stereo_left.z02
+  done: cam_stereo_left/cam_stereo_left.z01 (1.5GB) | total so far: 1.5GB | elapsed: 0.2 min
+-> downloading: cam_stereo_left/cam_stereo_left.z03
+  done: cam_stereo_left/cam_stereo_left.z02 (1.5GB) | total so far: 2.9GB | elapsed: 12.4 min
+-> downloading: cam_stereo_left/cam_stereo_left.z04
+  done: cam_stereo_left/cam_stereo_left.z04 (1.5GB) | total so far: 4.4GB | elapsed: 13.7 min
+-> downloading: cam_stereo_left/cam_stereo_left.z05
+  done: cam_stereo_left/cam_stereo_left.z05 (1.5GB) | total so far: 5.9GB | elapsed: 15.2 min
+-> downloading: cam_stereo_left/cam_stereo_left.z06
+  done: cam_stereo_left/cam_stereo_left.z06 (1.5GB) | total so far: 7.3GB | elapsed: 16.6 min
+-> downloading: cam_stereo_left/cam_stereo_left.z07
+  [cam_stereo_left.z07] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 2s (attempt 1/5, resuming from 325.0MB)...
+  [cam_stereo_left.z03] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 2s (attempt 1/5, resuming from 733.0MB)...
+  [cam_stereo_left.z03] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 4s (attempt 2/5, resuming from 733.0MB)...
+  [cam_stereo_left.z07] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 4s (attempt 2/5, resuming from 826.0MB)...
+  done: cam_stereo_left/cam_stereo_left.z03 (1.5GB) | total so far: 8.8GB | elapsed: 39.5 min
+-> downloading: cam_stereo_left/cam_stereo_left.z08
+  [cam_stereo_left.z07] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 8s (attempt 3/5, resuming from 858.0MB)...
+  done: cam_stereo_left/cam_stereo_left.z07 (1.5GB) | total so far: 10.3GB | elapsed: 55.3 min
+-> downloading: cam_stereo_left/cam_stereo_left.z09
+  [cam_stereo_left.z09] transient error (ConnectionResetError(54, 'Connection reset by peer')), retrying in 2s (attempt 1/5, resuming from 2.0MB)...
+  [cam_stereo_left.z08] transient error (TimeoutError('The read operation timed out')), retrying in 2s (attempt 1/5, resuming from 79.0MB)...
+  done: cam_stereo_left/cam_stereo_left.z09 (1.5GB) | total so far: 11.7GB | elapsed: 64.1 min
+-> downloading: cam_stereo_left/cam_stereo_left.z10
+  done: cam_stereo_left/cam_stereo_left.z10 (1.5GB) | total so far: 13.2GB | elapsed: 66.5 min
+-> downloading: cam_stereo_left/cam_stereo_left.z11
+  done: cam_stereo_left/cam_stereo_left.z08 (1.5GB) | total so far: 14.6GB | elapsed: 95.8 min
+-> downloading: cam_stereo_left/cam_stereo_left.z12
+  done: cam_stereo_left/cam_stereo_left.z12 (1.5GB) | total so far: 16.1GB | elapsed: 97.1 min
+-> downloading: cam_stereo_left/cam_stereo_left.z13
+  done: cam_stereo_left/cam_stereo_left.z13 (1.5GB) | total so far: 17.6GB | elapsed: 98.4 min
+-> downloading: cam_stereo_left/cam_stereo_left.z14
+  done: cam_stereo_left/cam_stereo_left.z11 (1.5GB) | total so far: 19.0GB | elapsed: 99.2 min
+-> downloading: cam_stereo_left/cam_stereo_left.z15
+  done: cam_stereo_left/cam_stereo_left.z15 (1.5GB) | total so far: 20.5GB | elapsed: 100.5 min
+-> downloading: cam_stereo_left/cam_stereo_left.z16
+  done: cam_stereo_left/cam_stereo_left.z16 (1.5GB) | total so far: 22.0GB | elapsed: 101.8 min
+-> downloading: cam_stereo_left/cam_stereo_left.z17
+  done: cam_stereo_left/cam_stereo_left.z17 (1.5GB) | total so far: 23.4GB | elapsed: 103.1 min
+-> downloading: cam_stereo_left/cam_stereo_left.z18
+  done: cam_stereo_left/cam_stereo_left.z18 (1.5GB) | total so far: 24.9GB | elapsed: 104.3 min
+-> downloading: cam_stereo_left/cam_stereo_left.z19
+  done: cam_stereo_left/cam_stereo_left.z19 (1.5GB) | total so far: 26.4GB | elapsed: 105.7 min
+-> downloading: cam_stereo_left/cam_stereo_left.z20
+  done: cam_stereo_left/cam_stereo_left.z20 (1.5GB) | total so far: 27.8GB | elapsed: 107.0 min
+-> downloading: cam_stereo_left/cam_stereo_left.z21
+  done: cam_stereo_left/cam_stereo_left.z21 (1.5GB) | total so far: 29.3GB | elapsed: 108.4 min
+-> downloading: cam_stereo_left/cam_stereo_left.z22
+  done: cam_stereo_left/cam_stereo_left.z22 (1.5GB) | total so far: 30.8GB | elapsed: 109.7 min
+-> downloading: cam_stereo_left/cam_stereo_left.z23
+  done: cam_stereo_left/cam_stereo_left.z23 (1.5GB) | total so far: 32.2GB | elapsed: 111.1 min
+-> downloading: cam_stereo_left/cam_stereo_left.z24
+  done: cam_stereo_left/cam_stereo_left.z24 (1.5GB) | total so far: 33.7GB | elapsed: 112.4 min
+-> downloading: cam_stereo_left/cam_stereo_left.z25
+  done: cam_stereo_left/cam_stereo_left.z25 (1.5GB) | total so far: 35.2GB | elapsed: 113.7 min
+-> downloading: cam_stereo_left/cam_stereo_left.zip
+  done: cam_stereo_left/cam_stereo_left.zip (63.9MB) | total so far: 35.2GB | elapsed: 113.8 min
+-> downloading: cam_stereo_right/cam_stereo_right.z01
+  done: cam_stereo_left/cam_stereo_left.z14 (1.5GB) | total so far: 36.7GB | elapsed: 132.1 min
+-> downloading: cam_stereo_right/cam_stereo_right.z02
+  done: cam_stereo_right/cam_stereo_right.z02 (1.5GB) | total so far: 38.1GB | elapsed: 133.5 min
+-> downloading: cam_stereo_right/cam_stereo_right.z03
+  done: cam_stereo_right/cam_stereo_right.z03 (1.5GB) | total so far: 39.6GB | elapsed: 134.8 min
+-> downloading: cam_stereo_right/cam_stereo_right.z04
+  done: cam_stereo_right/cam_stereo_right.z01 (1.5GB) | total so far: 41.1GB | elapsed: 147.6 min
+-> downloading: cam_stereo_right/cam_stereo_right.z05
+  done: cam_stereo_right/cam_stereo_right.z05 (1.5GB) | total so far: 42.5GB | elapsed: 148.9 min
+-> downloading: cam_stereo_right/cam_stereo_right.z06
+  done: cam_stereo_right/cam_stereo_right.z06 (1.5GB) | total so far: 44.0GB | elapsed: 150.2 min
+-> downloading: cam_stereo_right/cam_stereo_right.z07
+  done: cam_stereo_right/cam_stereo_right.z04 (1.5GB) | total so far: 45.5GB | elapsed: 167.9 min
+-> downloading: cam_stereo_right/cam_stereo_right.z08
+  done: cam_stereo_right/cam_stereo_right.z07 (1.5GB) | total so far: 46.9GB | elapsed: 182.8 min
+-> downloading: cam_stereo_right/cam_stereo_right.z09
+  done: cam_stereo_right/cam_stereo_right.z08 (1.5GB) | total so far: 48.4GB | elapsed: 201.2 min
+-> downloading: cam_stereo_right/cam_stereo_right.z10
+  done: cam_stereo_right/cam_stereo_right.z10 (1.5GB) | total so far: 49.9GB | elapsed: 202.5 min
+-> downloading: cam_stereo_right/cam_stereo_right.z11
+  done: cam_stereo_right/cam_stereo_right.z11 (1.5GB) | total so far: 51.3GB | elapsed: 203.8 min
+-> downloading: cam_stereo_right/cam_stereo_right.z12
+  done: cam_stereo_right/cam_stereo_right.z12 (1.5GB) | total so far: 52.8GB | elapsed: 205.1 min
+-> downloading: cam_stereo_right/cam_stereo_right.z13
+  done: cam_stereo_right/cam_stereo_right.z13 (1.5GB) | total so far: 54.3GB | elapsed: 206.5 min
+-> downloading: cam_stereo_right/cam_stereo_right.z14
+  done: cam_stereo_right/cam_stereo_right.z14 (1.5GB) | total so far: 55.7GB | elapsed: 207.8 min
+-> downloading: cam_stereo_right/cam_stereo_right.z15
+  done: cam_stereo_right/cam_stereo_right.z15 (1.5GB) | total so far: 57.2GB | elapsed: 209.1 min
+-> downloading: cam_stereo_right/cam_stereo_right.z16
+  done: cam_stereo_right/cam_stereo_right.z16 (1.5GB) | total so far: 58.7GB | elapsed: 210.4 min
+-> downloading: cam_stereo_right/cam_stereo_right.z17
+  done: cam_stereo_right/cam_stereo_right.z17 (1.5GB) | total so far: 60.1GB | elapsed: 211.6 min
+-> downloading: cam_stereo_right/cam_stereo_right.z18
+  done: cam_stereo_right/cam_stereo_right.z18 (1.5GB) | total so far: 61.6GB | elapsed: 213.0 min
+-> downloading: cam_stereo_right/cam_stereo_right.z19
+  done: cam_stereo_right/cam_stereo_right.z19 (1.5GB) | total so far: 63.1GB | elapsed: 214.3 min
+-> downloading: cam_stereo_right/cam_stereo_right.z20
+  done: cam_stereo_right/cam_stereo_right.z20 (1.5GB) | total so far: 64.5GB | elapsed: 215.6 min
+-> downloading: cam_stereo_right/cam_stereo_right.z21
+  done: cam_stereo_right/cam_stereo_right.z09 (1.5GB) | total so far: 66.0GB | elapsed: 216.8 min
+-> downloading: cam_stereo_right/cam_stereo_right.z22
+  done: cam_stereo_right/cam_stereo_right.z22 (1.5GB) | total so far: 67.4GB | elapsed: 218.1 min
+-> downloading: cam_stereo_right/cam_stereo_right.z23
+  done: cam_stereo_right/cam_stereo_right.z21 (1.5GB) | total so far: 68.9GB | elapsed: 249.0 min
+-> downloading: cam_stereo_right/cam_stereo_right.z24
+  done: cam_stereo_right/cam_stereo_right.z24 (1.5GB) | total so far: 70.4GB | elapsed: 250.3 min
+-> downloading: cam_stereo_right/cam_stereo_right.z25
+  done: cam_stereo_right/cam_stereo_right.z23 (1.5GB) | total so far: 71.8GB | elapsed: 250.7 min
+-> downloading: cam_stereo_right/cam_stereo_right.zip
+  done: cam_stereo_right/cam_stereo_right.zip (666.8MB) | total so far: 72.5GB | elapsed: 251.5 min
+-> downloading: filtered_relevant_can_data/filtered_relevant_can_data.zip
+  done: filtered_relevant_can_data/filtered_relevant_can_data.zip (14.8MB) | total so far: 72.5GB | elapsed: 251.5 min
+-> downloading: gt_labels/cam_left_labels_TMP.zip
+  done: gt_labels/cam_left_labels_TMP.zip (8.8MB) | total so far: 72.5GB | elapsed: 251.6 min
+-> downloading: gt_labels/gated_labels_TMPv2.zip
+  done: gt_labels/gated_labels_TMPv2.zip (8.5MB) | total so far: 72.5GB | elapsed: 251.6 min
+-> downloading: labeltool_labels/labeltool_labels.zip
+  done: labeltool_labels/labeltool_labels.zip (6.6MB) | total so far: 72.5GB | elapsed: 251.7 min
+-> downloading: labeltool_labels/labeltool_labels_refined.zip
+  done: labeltool_labels/labeltool_labels_refined.zip (6.4MB) | total so far: 72.5GB | elapsed: 251.8 min
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z01
+  done: cam_stereo_right/cam_stereo_right.z25 (1.5GB) | total so far: 74.0GB | elapsed: 251.8 min
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z02
+  done: lidar_hdl64_last/lidar_hdl64_last.z02 (1.5GB) | total so far: 75.5GB | elapsed: 253.2 min
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z03
+  done: lidar_hdl64_last/lidar_hdl64_last.z01 (1.5GB) | total so far: 76.9GB | elapsed: 253.7 min
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z04
+  done: lidar_hdl64_last/lidar_hdl64_last.z03 (1.5GB) | total so far: 78.4GB | elapsed: 254.6 min
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z05
+  done: lidar_hdl64_last/lidar_hdl64_last.z05 (1.5GB) | total so far: 79.9GB | elapsed: 255.8 min
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.z06
+  done: lidar_hdl64_last/lidar_hdl64_last.z06 (1.5GB) | total so far: 81.3GB | elapsed: 257.2 min
+-> downloading: lidar_hdl64_last/lidar_hdl64_last.zip
+  done: lidar_hdl64_last/lidar_hdl64_last.zip (4.1MB) | total so far: 81.3GB | elapsed: 257.2 min
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z01
+  done: lidar_hdl64_strongest/lidar_hdl64_strongest.z01 (1.5GB) | total so far: 82.8GB | elapsed: 258.5 min
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z02
+  done: lidar_hdl64_strongest/lidar_hdl64_strongest.z02 (1.5GB) | total so far: 84.3GB | elapsed: 259.8 min
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z03
+  done: lidar_hdl64_strongest/lidar_hdl64_strongest.z03 (1.5GB) | total so far: 85.7GB | elapsed: 261.1 min
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z04
+  done: lidar_hdl64_last/lidar_hdl64_last.z04 (1.5GB) | total so far: 87.2GB | elapsed: 287.2 min
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z05
+  done: lidar_hdl64_strongest/lidar_hdl64_strongest.z04 (1.5GB) | total so far: 88.7GB | elapsed: 294.6 min
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.z06
+  done: lidar_hdl64_strongest/lidar_hdl64_strongest.z06 (1.5GB) | total so far: 90.1GB | elapsed: 296.0 min
+-> downloading: lidar_hdl64_strongest/lidar_hdl64_strongest.zip
+  done: lidar_hdl64_strongest/lidar_hdl64_strongest.zip (6.9MB) | total so far: 90.1GB | elapsed: 296.0 min
+-> downloading: radar_targets/.DS_Store
+  done: radar_targets/.DS_Store (8.0KB) | total so far: 90.1GB | elapsed: 296.0 min
+-> downloading: radar_targets/radar_targets.zip
+  done: radar_targets/radar_targets.zip (32.7MB) | total so far: 90.2GB | elapsed: 296.1 min
+-> downloading: road_friction/road_friction.zip
+  done: road_friction/road_friction.zip (2.0MB) | total so far: 90.2GB | elapsed: 296.1 min
+-> downloading: weather_station/weather_station.zip
+  done: weather_station/weather_station.zip (6.4MB) | total so far: 90.2GB | elapsed: 296.2 min
+  done: lidar_hdl64_strongest/lidar_hdl64_strongest.z05 (1.5GB) | total so far: 91.6GB | elapsed: 320.2 min
+
+Finished. Total downloaded: 91.6GB into data/stf
+81 files match the scoped subset.
+
+skip (exists): calib_cam_stereo_left.json
+skip (exists): calib_cam_stereo_right.json
+skip (exists): calib_gated_bwv.json
+skip (exists): calib_tf_tree_full.json
+skip (exists): cam_stereo_left/cam_stereo_left.z01
+skip (exists): cam_stereo_left/cam_stereo_left.z02
+skip (exists): cam_stereo_left/cam_stereo_left.z03
+skip (exists): cam_stereo_left/cam_stereo_left.z04
+skip (exists): cam_stereo_left/cam_stereo_left.z05
+skip (exists): cam_stereo_left/cam_stereo_left.z06
+skip (exists): cam_stereo_left/cam_stereo_left.z07
+skip (exists): cam_stereo_left/cam_stereo_left.z08
+skip (exists): cam_stereo_left/cam_stereo_left.z09
+skip (exists): cam_stereo_left/cam_stereo_left.z10
+skip (exists): cam_stereo_left/cam_stereo_left.z11
+skip (exists): cam_stereo_left/cam_stereo_left.z12
+skip (exists): cam_stereo_left/cam_stereo_left.z13
+skip (exists): cam_stereo_left/cam_stereo_left.z14
+skip (exists): cam_stereo_left/cam_stereo_left.z15
+skip (exists): cam_stereo_left/cam_stereo_left.z16
+skip (exists): cam_stereo_left/cam_stereo_left.z17
+skip (exists): cam_stereo_left/cam_stereo_left.z18
+skip (exists): cam_stereo_left/cam_stereo_left.z19
+skip (exists): cam_stereo_left/cam_stereo_left.z20
+skip (exists): cam_stereo_left/cam_stereo_left.z21
+skip (exists): cam_stereo_left/cam_stereo_left.z22
+skip (exists): cam_stereo_left/cam_stereo_left.z23
+skip (exists): cam_stereo_left/cam_stereo_left.z24
+skip (exists): cam_stereo_left/cam_stereo_left.z25
+skip (exists): cam_stereo_left/cam_stereo_left.zip
+skip (exists): cam_stereo_right/cam_stereo_right.z01
+skip (exists): cam_stereo_right/cam_stereo_right.z02
+skip (exists): cam_stereo_right/cam_stereo_right.z03
+skip (exists): cam_stereo_right/cam_stereo_right.z04
+skip (exists): cam_stereo_right/cam_stereo_right.z05
+skip (exists): cam_stereo_right/cam_stereo_right.z06
+skip (exists): cam_stereo_right/cam_stereo_right.z07
+skip (exists): cam_stereo_right/cam_stereo_right.z08
+skip (exists): cam_stereo_right/cam_stereo_right.z09
+skip (exists): cam_stereo_right/cam_stereo_right.z10
+skip (exists): cam_stereo_right/cam_stereo_right.z11
+skip (exists): cam_stereo_right/cam_stereo_right.z12
+skip (exists): cam_stereo_right/cam_stereo_right.z13
+skip (exists): cam_stereo_right/cam_stereo_right.z14
+skip (exists): cam_stereo_right/cam_stereo_right.z15
+skip (exists): cam_stereo_right/cam_stereo_right.z16
+skip (exists): cam_stereo_right/cam_stereo_right.z17
+skip (exists): cam_stereo_right/cam_stereo_right.z18
+skip (exists): cam_stereo_right/cam_stereo_right.z19
+skip (exists): cam_stereo_right/cam_stereo_right.z20
+skip (exists): cam_stereo_right/cam_stereo_right.z21
+skip (exists): cam_stereo_right/cam_stereo_right.z22
+skip (exists): cam_stereo_right/cam_stereo_right.z23
+skip (exists): cam_stereo_right/cam_stereo_right.z24
+skip (exists): cam_stereo_right/cam_stereo_right.z25
+skip (exists): cam_stereo_right/cam_stereo_right.zip
+skip (exists): filtered_relevant_can_data/filtered_relevant_can_data.zip
+skip (exists): gt_labels/cam_left_labels_TMP.zip
+skip (exists): gt_labels/gated_labels_TMPv2.zip
+skip (exists): labeltool_labels/labeltool_labels.zip
+skip (exists): labeltool_labels/labeltool_labels_refined.zip
+skip (exists): lidar_hdl64_last/lidar_hdl64_last.z01
+skip (exists): lidar_hdl64_last/lidar_hdl64_last.z02
+skip (exists): lidar_hdl64_last/lidar_hdl64_last.z03
+skip (exists): lidar_hdl64_last/lidar_hdl64_last.z04
+skip (exists): lidar_hdl64_last/lidar_hdl64_last.z05
+skip (exists): lidar_hdl64_last/lidar_hdl64_last.z06
+skip (exists): lidar_hdl64_last/lidar_hdl64_last.zip
+skip (exists): lidar_hdl64_strongest/lidar_hdl64_strongest.z01
+skip (exists): lidar_hdl64_strongest/lidar_hdl64_strongest.z02
+skip (exists): lidar_hdl64_strongest/lidar_hdl64_strongest.z03
+skip (exists): lidar_hdl64_strongest/lidar_hdl64_strongest.z04
+skip (exists): lidar_hdl64_strongest/lidar_hdl64_strongest.z05
+skip (exists): lidar_hdl64_strongest/lidar_hdl64_strongest.z06
+skip (exists): lidar_hdl64_strongest/lidar_hdl64_strongest.zip
+skip (exists): radar_targets/radar_targets.zip
+skip (exists): road_friction/road_friction.zip
+skip (exists): weather_station/weather_station.zip
+
+Downloading 3 file(s) with 2 concurrent workers...
+
+-> downloading: fir_axis/fir_axis.z01
+-> downloading: fir_axis/fir_axis.zip
+  done: fir_axis/fir_axis.zip (486.3MB) | total so far: 92.1GB | elapsed: 0.9 min
+-> downloading: radar_targets/.DS_Store
+  done: radar_targets/.DS_Store (8.0KB) | total so far: 92.1GB | elapsed: 0.9 min
+  done: fir_axis/fir_axis.z01 (1.5GB) | total so far: 93.6GB | elapsed: 1.6 min
+
+Finished. Total downloaded: 93.6GB into data/stf

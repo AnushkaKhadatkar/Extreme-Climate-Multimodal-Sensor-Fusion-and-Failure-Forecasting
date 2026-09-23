@@ -1,0 +1,126 @@
+# Dataset config for the STF-converted-to-KITTI data, used in place of OpenPCDet's
+# stock tools/cfgs/dataset_configs/kitti_dataset.yaml.
+#
+# This is a config-only change (DATA_PATH, split names, info-file names) -- no
+# OpenPCDet source code is modified. Everything else (POINT_CLOUD_RANGE, feature
+# encoding, augmentor, voxelizer) is copied verbatim from the stock KITTI config,
+# per context.md's "use released configs verbatim for the baseline" / "do not
+# modify the baseline beyond what is needed to run it on our splits".
+#
+# Differences from stock kitti_dataset.yaml, and why:
+#   - DATA_PATH points at our converted data/kitti_format/ (see
+#     ../scripts/02_convert_to_kitti.py), not OpenPCDet's own data/kitti/. This
+#     is 'data/kitti_format' (relative to <openpcdet_root>/tools/, matching
+#     stock OpenPCDet's own DATA_PATH: '../data/kitti' convention) -- deploy
+#     this repo's baseline/data/kitti_format/ to
+#     <openpcdet_root>/data/kitti_format/ on the GPU box (see this file's
+#     placement note in pv_rcnn_stf.yaml's header).
+#   - DATA_SPLIT / INFO_PATH: stock OpenPCDet only names train/val. We add
+#     test_clear / test_light_fog / test_dense_fog as three *separate* named
+#     splits (not folded into one "test") because Table 2 reports them as three
+#     independent columns -- merging them would make it impossible to reproduce
+#     the moderate>easy inversion context.md calls out as a correctness signal
+#     (section 3: "Reproducing the inversion is positive evidence the protocol
+#     matches").
+#   - Everything below POINT_CLOUD_RANGE is byte-for-byte identical to stock
+#     kitti_dataset.yaml (fetched 2026-09-22 from open-mmlab/OpenPCDet@master).
+#
+# IMPORTANT layout note: all five splits' data lives under DATA_PATH/training/,
+# not split training/testing like plain KITTI. This is required by a hard-coded
+# check in OpenPCDet's KittiDataset (`'training' if self.split != 'test' else
+# 'testing'`), which would silently misroute our test_clear/test_light_fog/
+# test_dense_fog splits (any name other than the literal 'test') to training/
+# regardless of what's configured here. See REPRODUCTION_PLAN.md section 2.
+
+DATASET: 'KittiDataset'
+DATA_PATH: '../data/kitti_format'  # relative to <openpcdet_root>/tools/, mirrors stock '../data/kitti'
+
+POINT_CLOUD_RANGE: [0, -40, -3, 70.4, 40, 1]
+
+DATA_SPLIT: {
+    'train': train,
+    'test': val
+}
+
+INFO_PATH: {
+    'train': [kitti_infos_train.pkl],
+    'test': [kitti_infos_val.pkl],
+}
+
+# Additional named splits for the three STF test sets (clear/light-fog/dense-fog).
+# Not part of stock OpenPCDet's schema -- generate these info files with
+# create_kitti_infos using DATA_SPLIT test=test_clear / test_light_fog /
+# test_dense_fog in three separate passes (see docs/REPRODUCTION_PLAN.md).
+EXTRA_TEST_SPLITS: ['test_clear', 'test_light_fog', 'test_dense_fog']
+EXTRA_TEST_INFO_PATH: {
+    'test_clear': [kitti_infos_test_clear.pkl],
+    'test_light_fog': [kitti_infos_test_light_fog.pkl],
+    'test_dense_fog': [kitti_infos_test_dense_fog.pkl],
+}
+
+GET_ITEM_LIST: ["points"]
+FOV_POINTS_ONLY: True
+
+DATA_AUGMENTOR:
+    DISABLE_AUG_LIST: ['placeholder']
+    AUG_CONFIG_LIST:
+        - NAME: gt_sampling
+          # DEVIATION FROM STOCK CONFIG: stock kitti_dataset.yaml has this True.
+          # KITTI ships a training/planes/ directory (per-frame RANSAC ground-plane
+          # fits) that USE_ROAD_PLANE:True uses to place sampled GT boxes on the
+          # ground realistically. STF does not ship equivalent ground planes, and
+          # OpenPCDet raises KeyError('road_plane') at DB-sampling time if planes/
+          # is missing while this is True (open-mmlab/OpenPCDet#138). Flipping it
+          # to False falls back to sampling GT boxes at their original recorded
+          # height, which is OpenPCDet's own documented fallback for datasets
+          # without a planes/ directory -- not a bespoke workaround.
+          # Consequence: this is a real (small) deviation from "verbatim released
+          # config" -- record it in any writeup, per context.md's hedging rule.
+          USE_ROAD_PLANE: False
+          DB_INFO_PATH:
+              - kitti_dbinfos_train.pkl
+          PREPARE: {
+             filter_by_min_points: ['Car:5', 'Pedestrian:5', 'Cyclist:5'],
+             filter_by_difficulty: [-1],
+          }
+
+          SAMPLE_GROUPS: ['Car:20','Pedestrian:15', 'Cyclist:15']
+          NUM_POINT_FEATURES: 4
+          DATABASE_WITH_FAKELIDAR: False
+          REMOVE_EXTRA_WIDTH: [0.0, 0.0, 0.0]
+          LIMIT_WHOLE_SCENE: True
+
+        - NAME: random_world_flip
+          ALONG_AXIS_LIST: ['x']
+
+        - NAME: random_world_rotation
+          WORLD_ROT_ANGLE: [-0.78539816, 0.78539816]
+
+        - NAME: random_world_scaling
+          WORLD_SCALE_RANGE: [0.95, 1.05]
+
+
+POINT_FEATURE_ENCODING: {
+    encoding_type: absolute_coordinates_encoding,
+    used_feature_list: ['x', 'y', 'z', 'intensity'],
+    src_feature_list: ['x', 'y', 'z', 'intensity'],
+}
+
+
+DATA_PROCESSOR:
+    - NAME: mask_points_and_boxes_outside_range
+      REMOVE_OUTSIDE_BOXES: True
+
+    - NAME: shuffle_points
+      SHUFFLE_ENABLED: {
+        'train': True,
+        'test': False
+      }
+
+    - NAME: transform_points_to_voxels
+      VOXEL_SIZE: [0.05, 0.05, 0.1]
+      MAX_POINTS_PER_VOXEL: 5
+      MAX_NUMBER_OF_VOXELS: {
+        'train': 16000,
+        'test': 40000
+      }

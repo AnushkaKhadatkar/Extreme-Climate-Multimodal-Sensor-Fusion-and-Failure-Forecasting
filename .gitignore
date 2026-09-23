@@ -1,0 +1,17 @@
+# Raw STF dataset (~160 GB) — download with download_stf_subset.py
+/data/
+
+# Generated/converted data (~67 GB) — regenerate with baseline/scripts
+baseline/data/_merged_zips/
+baseline/data/kitti_source/
+baseline/data/kitti_format/training/
+
+# Personal drafts
+scratch_ta_email_draft.txt
+
+# Python / OS
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
