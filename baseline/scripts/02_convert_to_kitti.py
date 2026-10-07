@@ -156,7 +156,7 @@ def convert_label(src_txt: Path, dst_txt: Path) -> tuple[int, int]:
         dst_txt.write_text("")
         return 0, 0
 
-    out_lines = []
+    objects = []  # (kitti_class, line) -- order fixed up below, see note
     n_total = n_remapped = 0
     for line in src_txt.read_text().splitlines():
         line = line.strip()
@@ -173,7 +173,24 @@ def convert_label(src_txt: Path, dst_txt: Path) -> tuple[int, int]:
             n_remapped += 1
         # KITTI's 15 fields: type truncated occluded alpha bbox(4) dims(3) loc(3) ry
         kitti_fields = [kitti_class] + f[1:15]
-        out_lines.append(" ".join(kitti_fields))
+        objects.append((kitti_class, " ".join(kitti_fields)))
+
+    # Stock KITTI convention -- and a load-bearing assumption in OpenPCDet's
+    # own kitti_dataset.py get_infos(), not just a style choice -- is that all
+    # non-DontCare objects are listed before any DontCare object in a frame's
+    # label file. get_infos() computes gt_boxes_lidar via a positional slice
+    # `location[:num_objects]` rather than filtering by name, so if a
+    # DontCare-remapped object (Obstacle, *_is_group, etc.) appears before a
+    # real Car/Pedestrian/Cyclist in the source STF order, that slice silently
+    # grabs the wrong rows -- harmless-looking until training, where
+    # common_utils.drop_info_with_name's name-based filtering then disagrees
+    # with gt_boxes_lidar's position-based one and crashes with an IndexError
+    # on the very first batch (confirmed: this exact bug, caught by actually
+    # running training on the GPU box, not by the conversion-time checks in
+    # 05_verify_conversion.py, which don't exercise get_infos()). Stable sort
+    # on "is DontCare" preserves original relative order within each group.
+    objects.sort(key=lambda o: o[0] == "DontCare")
+    out_lines = [line for _, line in objects]
 
     dst_txt.write_text("\n".join(out_lines) + ("\n" if out_lines else ""))
     return n_total, n_remapped

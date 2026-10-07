@@ -1,0 +1,51 @@
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TORCH_CUDA_ARCH_LIST="8.9"
+# 8.9 = Ada / RTX 4090. Pin explicitly so spconv/pcdet's nvcc build doesn't
+# waste time compiling for every architecture it knows about.
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 python3.10-dev python3-pip git ninja-build libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3.10 /usr/bin/python
+
+RUN pip install --no-cache-dir \
+    torch==2.0.1+cu118 torchvision==0.15.2+cu118 \
+    --index-url https://download.pytorch.org/whl/cu118
+
+RUN pip install --no-cache-dir \
+    numpy==1.23.5 \
+    spconv-cu118==2.3.6 \
+    numba easydict pyyaml scikit-image tqdm tensorboardX \
+    SharedArray opencv-python-headless pyquaternion
+# numba left unpinned (latest) -- see the rotate_iou.py patch below for why.
+# A version-pin was tried first (0.56.4, to dodge a "Signature mismatch"
+# TypeError on latest numba) and made things worse: it traded that error for
+# a silent segfault, i.e. this GPU's compute capability (8.9, Ada -- RTX 4090
+# launched after numba 0.56 shipped) needs a newer numba codegen than the
+# file's eager string-signature decorators were tested against. Fixing the
+# decorators themselves (next step) instead of hunting for a numba version
+# that happens to tolerate both the old decorator style and this GPU is the
+# more robust fix, and lets us use the best-supported (newest) numba.
+
+WORKDIR /opt
+RUN git clone --depth 1 https://github.com/open-mmlab/OpenPCDet.git
+
+# Three build-time patches to the OpenPCDet checkout -- see
+# patch_openpcdet.py's own comments for why each one is needed (unused
+# optional dataset connectors pulling in heavy unrelated devkits, a missing
+# pathlib.Path import that's an upstream bug, and numba/CUDA eager-signature
+# decorators that crash two different ways on this GPU). A COPY'd script
+# instead of a Dockerfile heredoc: an earlier heredoc version of the
+# rotate_iou.py regex patch hit a reproducible discrepancy between what ran
+# inside `docker build` and the identical regex run manually, so a real file
+# sidesteps that whole class of problem.
+COPY patch_openpcdet.py /tmp/patch_openpcdet.py
+RUN python /tmp/patch_openpcdet.py
+
+WORKDIR /opt/OpenPCDet
+RUN python setup.py develop
+
+WORKDIR /workspace

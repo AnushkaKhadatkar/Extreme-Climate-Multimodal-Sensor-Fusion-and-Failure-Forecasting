@@ -74,7 +74,7 @@ def check_files_present(kitti_format: Path) -> bool:
                 if not (kitti_format / phase / sub / f"{kid}.{ext}").exists():
                     missing[sub] += 1
         n_missing = sum(missing.values())
-        status = "OK" if n_missing == 0 else "WARN"
+        status = "OK" if n_missing == 0 else "FAIL"
         print(f"  [{status}] {split}: {missing}")
         if n_missing:
             ok = False
@@ -83,9 +83,13 @@ def check_files_present(kitti_format: Path) -> bool:
 
 def check_lidar_shapes(kitti_format: Path, n_sample: int = 50) -> bool:
     print(f"\n=== 3. LiDAR bin shape check ({n_sample} random samples) ===")
-    ok = True
     all_bins = list((kitti_format / "training" / "velodyne").glob("*.bin")) + \
                list((kitti_format / "testing" / "velodyne").glob("*.bin"))
+    if not all_bins:
+        print("  [FAIL] no .bin files found under training/velodyne or testing/velodyne "
+              "-- data is not present, not just unsampled")
+        return False
+    ok = True
     for b in random.sample(all_bins, min(n_sample, len(all_bins))):
         scan = np.fromfile(b, dtype=np.float32)
         if scan.size % 4 != 0:
@@ -102,6 +106,9 @@ def check_lidar_shapes(kitti_format: Path, n_sample: int = 50) -> bool:
 def check_calib(kitti_format: Path) -> bool:
     print("\n=== 4. Calibration matrix shapes ===")
     calib_file = kitti_format / "training" / "calib" / "000000.txt"
+    if not calib_file.exists():
+        print(f"  [FAIL] {calib_file} does not exist")
+        return False
     calib = {}
     for line in calib_file.read_text().splitlines():
         key, vals = line.split(":", 1)
@@ -120,11 +127,18 @@ def check_class_histogram(kitti_format: Path) -> bool:
     print("\n=== 5. Label class histogram (train split) ===")
     ids = [l.strip() for l in (kitti_format / "ImageSets" / "train.txt").read_text().splitlines() if l.strip()]
     hist = {}
+    missing = 0
     for kid in ids:
         label_file = kitti_format / "training" / "label_2" / f"{kid}.txt"
+        if not label_file.exists():
+            missing += 1
+            continue
         for line in label_file.read_text().splitlines():
             cls = line.split(" ")[0]
             hist[cls] = hist.get(cls, 0) + 1
+    if missing:
+        print(f"  [FAIL] {missing}/{len(ids)} label files missing -- cannot build a real histogram")
+        return False
     for cls, n in sorted(hist.items(), key=lambda kv: -kv[1]):
         print(f"  {cls}: {n}")
     ok = hist.get("Car", 0) > 0 and hist.get("Pedestrian", 0) > 0
@@ -150,14 +164,21 @@ def check_projection(kitti_format: Path, n_frames: int = 20) -> bool:
 
     total_boxes = 0
     total_in_bounds = 0
+    missing = 0
     for kid in sample_ids:
+        calib_file = kitti_format / "training" / "calib" / f"{kid}.txt"
+        label_file = kitti_format / "training" / "label_2" / f"{kid}.txt"
+        if not calib_file.exists() or not label_file.exists():
+            missing += 1
+            continue
+
         calib = {}
-        for line in (kitti_format / "training" / "calib" / f"{kid}.txt").read_text().splitlines():
+        for line in calib_file.read_text().splitlines():
             key, vals = line.split(":", 1)
             calib[key] = np.array([float(v) for v in vals.split()])
         P2 = calib["P2"].reshape(3, 4)
 
-        for line in (kitti_format / "training" / "label_2" / f"{kid}.txt").read_text().splitlines():
+        for line in label_file.read_text().splitlines():
             f = line.strip().split(" ")
             if not f or f[0] == "DontCare":
                 continue
@@ -174,6 +195,11 @@ def check_projection(kitti_format: Path, n_frames: int = 20) -> bool:
             xs, ys = proj[0], proj[1]
             if xs.min() < 1920 and xs.max() > 0 and ys.min() < 1024 and ys.max() > 0:
                 total_in_bounds += 1
+
+    if missing:
+        print(f"  [FAIL] {missing}/{len(sample_ids)} sampled frames had no calib/label file -- "
+              "data is not present, cannot run the spot-check")
+        return False
 
     frac = total_in_bounds / total_boxes if total_boxes else 0
     status = "OK" if frac > 0.9 else "FAIL"

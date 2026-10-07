@@ -5,6 +5,22 @@
 baseline/data/_merged_zips/
 baseline/data/kitti_source/
 baseline/data/kitti_format/training/
+baseline/data/kitti_format/*.pkl
+baseline/data/kitti_format/gt_database/
+
+# Training checkpoints and eval output — regenerate with the GPU-box run order
+# in baseline/README.md (too large and too easy to regenerate to version)
+baseline/output/
+
+# Local debug/build logs from running the pipeline scripts
+convert_log*.txt
+create_infos_log*.txt
+docker_build_log*.txt
+download_log_rerun.txt
+eval_only_log*.txt
+extract_log.txt
+image_extract_log.txt
+train_1epoch_log*.txt
 
 # Personal drafts
 scratch_ta_email_draft.txt
