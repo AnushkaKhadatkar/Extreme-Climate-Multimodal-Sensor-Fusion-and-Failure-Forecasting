@@ -1,0 +1,17 @@
+=== Data statistics summary (real data, computed by this script) ===
+
+Class totals across all 5 splits:
+  Car: 35736
+  Pedestrian: 28941
+  Cyclist: 1967
+  DontCare: 10921
+
+Train split: 3469 frames, mean 11.4 objects/frame (min 1, max 59)
+Lidar points/frame (400-frame sample): mean=57831 std=14591
+
+Findings:
+  - Pedestrian outnumbers Car in the train split alone (17078 vs 16209), but Car leads once all 5 splits are combined (35736 vs 28941) -- the test splits skew more Car-heavy than train, worth checking for train/test distribution shift.
+  - DontCare makes up 14.1% of all labeled rows -- these are non-vocabulary STF classes remapped during conversion, not noise.
+  - 76.8% of train frames contain zero Cyclist instances -- the class is real but sparse, worth watching in the per-class AP breakdown.
+  - 11667/34531 (33.8%) of train-split Car/Pedestrian/Cyclist rows carry STF's sentinel '-1.00' dims (3D box not measured for that object) -- excluded from the dimension/distance plots above rather than left in to skew them.
+  - Lidar points/frame is sharply bimodal, not a smooth spread: most sampled frames cluster around 55007 points, but 6.8% cluster near 110343 -- roughly 2x, not weather-driven attenuation (that would be a continuous shift, not a clean split). Open question, not yet explained: possibly a sensor/recording-session difference across STF drives, worth checking before training leans on point density as a signal.
