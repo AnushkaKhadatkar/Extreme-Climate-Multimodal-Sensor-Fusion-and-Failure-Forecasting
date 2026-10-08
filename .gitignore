@@ -22,8 +22,14 @@ extract_log.txt
 image_extract_log.txt
 train_1epoch_log*.txt
 
+# Generated EDA plots/summary -- regenerate with 06_data_statistics.py
+baseline/data/eda/
+
 # Personal drafts
 scratch_ta_email_draft.txt
+DEMO_SCRIPT.sh
+start_full_training.sh
+train_full80_log.txt
 
 # Python / OS
 __pycache__/
