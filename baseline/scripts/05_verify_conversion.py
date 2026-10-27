@@ -16,6 +16,11 @@ Checks:
      produces something close to 100% (a legitimately visible ground-truth box
      should, by construction, be in the camera's field of view -- STF's labels
      come from cam_left_labels_TMP, i.e. camera-visible annotations).
+     Only exercises P2 -- see 7.
+  7. Lidar->camera extrinsic: fraction of real GT boxes (within 40 m) that
+     contain at least one lidar point after Tr_velo_to_cam + R0_rect.
+  8. Median IoU between each projected 3D box's 2D extent and the label's own
+     2D bbox -- catches calibration errors check 6 is too loose to see.
 
 Usage:
     python 05_verify_conversion.py --kitti-format ../data/kitti_format
@@ -206,7 +211,118 @@ def check_projection(kitti_format: Path, n_frames: int = 20) -> bool:
     print(f"  [{status}] {total_in_bounds}/{total_boxes} in-front-of-camera boxes project into image bounds ({frac:.1%})")
     print("  (A badly wrong calibration produces near-0%; visually confirmed correct on frame "
           "000000 via data/sanity_check/000000_final_check.png during initial setup.)")
+    print("  NOTE: this check only exercises P2. Labels are already in camera coordinates, so a "
+          "wrong Tr_velo_to_cam passes it -- check 7 covers the extrinsic.")
     return frac > 0.9
+
+
+def read_calib(calib_file: Path) -> dict[str, np.ndarray]:
+    calib = {}
+    for line in calib_file.read_text().splitlines():
+        key, vals = line.split(":", 1)
+        calib[key] = np.array([float(v) for v in vals.split()])
+    return calib
+
+
+def read_real_boxes(label_file: Path) -> list[tuple[str, list[float], list[float]]]:
+    """(class, bbox2d x1y1x2y2, [h, w, l, x, y, z, ry]) for non-DontCare rows that
+    carry a real 3D box (skips STF's dims -1 / location -1000 sentinel)."""
+    out = []
+    for line in label_file.read_text().splitlines():
+        f = line.strip().split(" ")
+        if len(f) < 15 or f[0] == "DontCare":
+            continue
+        box = [float(v) for v in f[8:15]]
+        if min(box[:3]) <= 0 or box[5] <= -999:
+            continue
+        out.append((f[0], [float(v) for v in f[4:8]], box))
+    return out
+
+
+def box3d_corners_cam(h, w, l, x, y, z, ry) -> np.ndarray:
+    """3x8 corners in KITTI camera coords (location = bottom centre, y down)."""
+    xc = [l/2, l/2, -l/2, -l/2, l/2, l/2, -l/2, -l/2]
+    yc = [0, 0, 0, 0, -h, -h, -h, -h]
+    zc = [w/2, -w/2, -w/2, w/2, w/2, -w/2, -w/2, w/2]
+    R = np.array([[np.cos(ry), 0, np.sin(ry)], [0, 1, 0], [-np.sin(ry), 0, np.cos(ry)]])
+    return R @ np.array([xc, yc, zc]) + np.array([[x], [y], [z]])
+
+
+def check_extrinsic_points_in_boxes(kitti_format: Path, n_frames: int = 20, max_dist: float = 40.0) -> bool:
+    """BASELINE_TASKS.md D2. Transform lidar points into the rectified camera frame
+    with Tr_velo_to_cam and R0_rect -- the same path OpenPCDet uses to put labels
+    into the lidar frame -- and count GT boxes within max_dist that contain at
+    least one point. A wrong extrinsic leaves most boxes empty."""
+    print(f"\n=== 7. Lidar->camera extrinsic: points inside GT boxes ({n_frames} random train frames, "
+          f"boxes within {max_dist:.0f} m) ===")
+    ids = [l.strip() for l in (kitti_format / "ImageSets" / "train.txt").read_text().splitlines() if l.strip()]
+    n_boxes = n_hit = 0
+    pts_per_box = []
+    for kid in random.sample(ids, min(n_frames, len(ids))):
+        calib = read_calib(kitti_format / "training" / "calib" / f"{kid}.txt")
+        Tr = calib["Tr_velo_to_cam"].reshape(3, 4)
+        R0 = calib["R0_rect"].reshape(3, 3)
+        scan = np.fromfile(kitti_format / "training" / "velodyne" / f"{kid}.bin", dtype=np.float32).reshape(-1, 4)
+        pts = R0 @ (Tr[:, :3] @ scan[:, :3].T + Tr[:, 3:4])  # 3xN, camera rect frame
+        for _, _, (h, w, l, x, y, z, ry) in read_real_boxes(kitti_format / "training" / "label_2" / f"{kid}.txt"):
+            if not 0 < z <= max_dist:
+                continue
+            # rotate points into the box frame: local = R(ry)^T (p - loc)
+            c, s = np.cos(ry), np.sin(ry)
+            d = pts - np.array([[x], [y], [z]])
+            lx = c * d[0] - s * d[2]
+            lz = s * d[0] + c * d[2]
+            ly = d[1]
+            inside = (np.abs(lx) <= l / 2) & (np.abs(lz) <= w / 2) & (ly <= 0) & (ly >= -h)
+            n = int(inside.sum())
+            n_boxes += 1
+            n_hit += n > 0
+            pts_per_box.append(n)
+    if not n_boxes:
+        print("  [FAIL] no real 3D boxes within range in the sample")
+        return False
+    frac = n_hit / n_boxes
+    status = "OK" if frac > 0.9 else "FAIL"
+    print(f"  [{status}] {n_hit}/{n_boxes} boxes contain >=1 lidar point ({frac:.1%}); "
+          f"median points/box = {int(np.median(pts_per_box))}")
+    return frac > 0.9
+
+
+def check_projection_iou(kitti_format: Path, n_frames: int = 50) -> bool:
+    """BASELINE_TASKS.md D3. Project each real 3D box with P2, take its clipped 2D
+    extent, and compare with the label's own 2D bbox. Projected 3D hulls are a bit
+    looser than tight 2D boxes, so expect a median IoU around 0.7-0.85, not 1.0."""
+    print(f"\n=== 8. Projected-3D vs labelled-2D box IoU ({n_frames} random train frames) ===")
+    from PIL import Image
+
+    ids = [l.strip() for l in (kitti_format / "ImageSets" / "train.txt").read_text().splitlines() if l.strip()]
+    ious = []
+    for kid in random.sample(ids, min(n_frames, len(ids))):
+        P2 = read_calib(kitti_format / "training" / "calib" / f"{kid}.txt")["P2"].reshape(3, 4)
+        with Image.open(kitti_format / "training" / "image_2" / f"{kid}.png") as im:
+            W, H = im.size
+        for _, (x1, y1, x2, y2), (h, w, l, x, y, z, ry) in read_real_boxes(
+                kitti_format / "training" / "label_2" / f"{kid}.txt"):
+            corners = box3d_corners_cam(h, w, l, x, y, z, ry)
+            if (corners[2] <= 0.1).any():
+                continue
+            proj = P2 @ np.vstack([corners, np.ones((1, 8))])
+            u, v = proj[0] / proj[2], proj[1] / proj[2]
+            px1, py1 = max(u.min(), 0), max(v.min(), 0)
+            px2, py2 = min(u.max(), W - 1), min(v.max(), H - 1)
+            iw, ih = max(0, min(px2, x2) - max(px1, x1)), max(0, min(py2, y2) - max(py1, y1))
+            inter = iw * ih
+            union = (px2 - px1) * (py2 - py1) + (x2 - x1) * (y2 - y1) - inter
+            ious.append(inter / union if union > 0 else 0.0)
+    if not ious:
+        print("  [FAIL] no real 3D boxes in front of the camera in the sample")
+        return False
+    ious = np.array(ious)
+    med = float(np.median(ious))
+    status = "OK" if med > 0.5 else "FAIL"
+    print(f"  [{status}] median IoU {med:.2f} over {len(ious)} boxes; "
+          f"p10 {np.percentile(ious, 10):.2f}; {(ious < 0.3).mean():.1%} below 0.3")
+    return med > 0.5
 
 
 def main() -> int:
@@ -225,6 +341,8 @@ def main() -> int:
         check_calib(kitti_format),
         check_class_histogram(kitti_format),
         check_projection(kitti_format),
+        check_extrinsic_points_in_boxes(kitti_format),
+        check_projection_iou(kitti_format),
     ]
 
     print(f"\n=== {'ALL CHECKS PASSED' if all(results) else 'SOME CHECKS FAILED -- see above'} ===")
