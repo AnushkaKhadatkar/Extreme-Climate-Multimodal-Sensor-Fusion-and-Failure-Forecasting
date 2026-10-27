@@ -91,7 +91,7 @@ sequentially at conversion time, verified no collisions), so nothing conflicts.
 
 Frame IDs use the pattern `{sequence}_{timestamp}` sanitized to a KITTI-style
 zero-padded numeric ID via a generated mapping table
-(`baseline/splits/id_mapping.csv`) — KITTI filenames must be
+(`baseline/data/kitti_format/ImageSets/id_mapping.csv`) — KITTI filenames must be
 numeric, STF's aren't.
 
 ## 3. Label conversion
@@ -113,6 +113,18 @@ numeric, STF's aren't.
   KITTI) and non-vocabulary classes we remap to DontCare (real geometry passed
   through). Both are fine — KITTI eval ignores DontCare 3D fields entirely
   regardless of content, only using the 2D bbox for an IoU-based ignore mask).
+- **Protocol decision — objects with no 3D box become DontCare** (BASELINE_TASKS.md
+  D1). About a third of STF's Car/Pedestrian/Cyclist rows carry only a 2D box: dims
+  `-1`, location `-1000`. Passed through as real objects, they are ground truth no 3D
+  detection can ever match. KITTI eval assigns difficulty from the 2D box,
+  occlusion and truncation alone, so every one that qualifies is a guaranteed false
+  negative, capping recall. `02_convert_to_kitti.py` now remaps them to `DontCare`, so
+  their 2D box becomes an ignore region, which is KITTI's own convention for
+  regions without labels. This changes evaluation ground truth and is recorded here as a protocol
+  choice, not tuning. `--keep-sentinel-boxes` reproduces the old labels for
+  comparison. Training is expected to be unaffected: these boxes sit at -1000 m, so
+  OpenPCDet's range filter already drops them. Unverified against Hahner's own
+  loader, which is not public.
 - **Known limitation, does not affect the AP gate**: STF's `alpha` field
   (KITTI's observation angle, normally `ry - atan2(x,z)`) is a constant `-1.0`
   for every object, confirmed across a 1000-file / 4394-object random sample —
@@ -204,7 +216,12 @@ handed to it. See `README.md` for the exact run order.
    overlay on a real image (every box lands tightly on the real object, see
    `data/sanity_check/000000_final_check.png`), and a programmatic spot-check
    across 20 random frames (131/131 = 100% of in-front-of-camera boxes project
-   into image bounds). Resolved with high confidence.
+   into image bounds). **Only partly resolved**: both of those checks project labels
+   (already in camera coordinates) through `P2`, so they never exercise
+   `Tr_velo_to_cam`, the transform PV-RCNN actually depends on. Checks 7
+   (lidar points inside GT boxes) and 8 (projected-3D vs labelled-2D IoU) in
+   `05_verify_conversion.py` cover that. Treat calibration as verified only once
+   they pass.
 5. **`testing/` vs `training/` directory layout** — found via source-reading
    (not by symptom/crash) that OpenPCDet's `KittiDataset` hard-codes
    `'training' if self.split != 'test' else 'testing'`, which would have
