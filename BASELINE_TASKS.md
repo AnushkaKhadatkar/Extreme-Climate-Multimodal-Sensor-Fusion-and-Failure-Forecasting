@@ -197,11 +197,18 @@ Gate is read only after R1 + R3 + R8 are all in.
 | R6 run-to-run spread | Rohil | todo |
 | R7 README drift | Rohil | todo |
 | R8 regen infos + re-eval after D1 | Rohil | blocked on D8 |
-| D1 sentinel → DontCare | Dipin | todo |
-| D2 extrinsic check | Dipin | todo |
-| D3 2D IoU projection check | Dipin | todo |
-| D4 difficulty-field audit | Dipin | todo |
-| D5 lidar audit | Dipin | todo |
-| D6 fixed tone-map option | Dipin | todo |
-| D7 plan doc drift | Dipin | todo |
-| D8 ship reconverted labels | Dipin | blocked on D1 + data |
+| D1 sentinel → DontCare | Dipin | done on `dipin/baseline-data-checks`: 11,772 Car rows remapped (test_clear 3,130) |
+| D2 extrinsic check | Dipin | done, passes: 61/61 boxes contain points |
+| D3 2D IoU projection check | Dipin | done, passes: median IoU 0.89 |
+| D4 difficulty-field audit | Dipin | done: KITTI scales, tiers valid |
+| D5 lidar audit | Dipin | done: intensity 0–255, ground −1.95 m, 2× frames = one drive |
+| D6 fixed tone-map option | Dipin | todo (Phase 2 prep) |
+| D7 plan doc drift | Dipin | done |
+| D8 ship reconverted data | Dipin | ready: `baseline/data/kitti_format/` (placeholder images, see REPRODUCTION_PLAN §6) |
+
+### Hand-off notes for Rohil
+
+- `ImageSets/*.txt` and frame IDs are unchanged, so existing checkpoints still apply.
+- Copy the whole reconverted `baseline/data/kitti_format/training/` to the GPU box
+  (labels changed; images are now shape-only placeholders), then run R8.
+- Expect test GT Car counts to drop by the remapped rows above. That is the point of D1.
