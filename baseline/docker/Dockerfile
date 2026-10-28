@@ -30,8 +30,14 @@ RUN pip install --no-cache-dir \
 # that happens to tolerate both the old decorator style and this GPU is the
 # more robust fix, and lets us use the best-supported (newest) numba.
 
+# Pinned OpenPCDet commit (context.md section 6: pin versions). patch_openpcdet.py
+# asserts exact match counts against this tree, so bump this deliberately and
+# re-verify the patches, never implicitly by rebuilding.
+ARG OPENPCDET_SHA=233f849829b6ac19afb8af8837a0246890908755
+WORKDIR /opt/OpenPCDet
+RUN git init -q && git remote add origin https://github.com/open-mmlab/OpenPCDet.git \
+    && git fetch -q --depth 1 origin ${OPENPCDET_SHA} && git checkout -q FETCH_HEAD
 WORKDIR /opt
-RUN git clone --depth 1 https://github.com/open-mmlab/OpenPCDet.git
 
 # Three build-time patches to the OpenPCDet checkout -- see
 # patch_openpcdet.py's own comments for why each one is needed (unused
