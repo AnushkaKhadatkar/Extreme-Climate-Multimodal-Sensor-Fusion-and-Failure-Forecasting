@@ -329,7 +329,8 @@ def main() -> int:
                       f"{total_counts[other]} for {other}), consistent across splits.")
     lines += [
         f"  - DontCare makes up {100*total_counts['DontCare']/sum(total_counts.values()):.1f}% of all "
-        f"labeled rows -- these are non-vocabulary STF classes remapped during conversion, not noise.",
+        f"labeled rows -- non-vocabulary STF classes plus Car/Pedestrian/Cyclist rows with no 3D box "
+        f"(BASELINE_TASKS.md D1), both remapped during conversion, not noise.",
         f"  - {pct_zero_cyclist:.1f}% of train frames contain zero Cyclist instances -- the class is "
         f"real but sparse, worth watching in the per-class AP breakdown.",
         f"  - {n_sentinel_dims}/{n_vocab_rows} ({100*n_sentinel_dims/n_vocab_rows:.1f}%) of train-split "
