@@ -63,7 +63,9 @@ $deployCfgs = "cp /workspace/baseline/configs/pv_rcnn_stf.yaml /opt/OpenPCDet/to
 
 # 3. infos (skipped if all five already exist in the volume)
 $haveInfos = docker run --rm -v "${Volume}:/d" $Image bash -c "ls /d/kitti_infos_{train,val,test_clear,test_light_fog,test_dense_fog}.pkl /d/kitti_dbinfos_train.pkl >/dev/null 2>&1 && echo yes"
-if ($haveInfos -ne "yes") {
+# -contains, not -eq: the CUDA base image prints a banner to stdout first, so
+# $haveInfos is an array of lines ending in "yes".
+if (-not ($haveInfos -contains "yes")) {
     Write-Host "=== generating infos + gt database ==="
     Invoke-Docker run --rm @common $Image bash -c "$deployCfgs && python /workspace/baseline/scripts/03_create_infos.py --cfg /workspace/baseline/configs/kitti_dataset_stf.yaml --data-path /opt/OpenPCDet/data/kitti_format --workers 8"
 }
