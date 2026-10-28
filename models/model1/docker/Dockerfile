@@ -7,8 +7,10 @@
 # baseline are trained and evaluated by the same code (context.md section 6).
 FROM stf-openpcdet:pinned
 
-# pytest for models/model1/tests. Pinned like everything else in the base image.
-RUN pip install --no-cache-dir pytest==8.3.5
+# pytest for models/model1/tests. kornia: OpenPCDet's load_data_to_gpu converts
+# the "images" batch key with kornia.image_to_tensor, and the baseline image (no
+# images) doesn't ship it. 0.6.12 supports torch 2.0. Pinned like the base image.
+RUN pip install --no-cache-dir pytest==8.3.5 kornia==0.6.12
 
 # Bake the ImageNet ResNet-50 weights into the image so training never depends
 # on a download at run time (and every run uses the identical weights file).
