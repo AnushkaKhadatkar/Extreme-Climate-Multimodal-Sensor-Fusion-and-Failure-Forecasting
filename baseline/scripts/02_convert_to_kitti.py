@@ -43,6 +43,7 @@ import argparse
 import csv
 import json
 import zipfile
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -146,8 +147,22 @@ def convert_lidar(src_bin: Path, dst_bin: Path) -> None:
     scan[:, :4].tofile(dst_bin)  # drop channel/ring column (field 4)
 
 
-def convert_label(src_txt: Path, dst_txt: Path) -> tuple[int, int]:
-    """Returns (n_objects, n_remapped_to_dontcare) for reporting."""
+def is_sentinel_box(f: list[str]) -> bool:
+    """STF marks objects with no measured 3D box by dims h/w/l == -1 and
+    location == -1000 (2D box only). See BASELINE_TASKS.md D1."""
+    dims = [float(v) for v in f[8:11]]
+    loc = [float(v) for v in f[11:14]]
+    return all(d <= 0 for d in dims) or all(v <= -999 for v in loc)
+
+
+def convert_label(src_txt: Path, dst_txt: Path, keep_sentinel: bool = False,
+                  stats: Counter | None = None) -> tuple[int, int]:
+    """Returns (n_objects, n_remapped_to_dontcare) for reporting.
+
+    stats (optional) is updated with per-class sentinel counts under keys like
+    'sentinel:Car', and malformed-line counts under 'malformed'."""
+    if stats is None:
+        stats = Counter()
     if not src_txt.exists():
         # Some frames in the split files may not have a matching label export
         # (e.g. DontCare-only scenes trimmed by the source pipeline). Write an
@@ -164,6 +179,7 @@ def convert_label(src_txt: Path, dst_txt: Path) -> tuple[int, int]:
             continue
         f = line.split(" ")
         if len(f) < 23:
+            stats["malformed"] += 1
             continue  # malformed line, skip rather than crash the whole conversion
         stf_class = f[0]
         n_total += 1
@@ -171,6 +187,18 @@ def convert_label(src_txt: Path, dst_txt: Path) -> tuple[int, int]:
         if kitti_class is None:
             kitti_class = "DontCare"
             n_remapped += 1
+        elif kitti_class != "DontCare" and is_sentinel_box(f):
+            # A Car/Pedestrian/Cyclist with no 3D box can never be matched by a
+            # 3D detection, so left as-is it is a guaranteed false negative in
+            # KITTI eval (difficulty is assigned from the 2D box alone). As
+            # DontCare its 2D box becomes an ignore region instead. This changes
+            # eval ground truth -- a protocol decision, recorded in
+            # REPRODUCTION_PLAN.md, not tuning. --keep-sentinel-boxes restores
+            # the old behaviour for comparison.
+            stats[f"sentinel:{kitti_class}"] += 1
+            if not keep_sentinel:
+                kitti_class = "DontCare"
+                n_remapped += 1
         # KITTI's 15 fields: type truncated occluded alpha bbox(4) dims(3) loc(3) ry
         kitti_fields = [kitti_class] + f[1:15]
         objects.append((kitti_class, " ".join(kitti_fields)))
@@ -214,6 +242,26 @@ def tonemap_and_convert(raw_bytes_or_path, dst_png: Path) -> None:
     arr = np.clip((arr - lo) / max(hi - lo, 1e-6), 0, 1)
     arr = (arr * 255).astype(np.uint8)
     Image.fromarray(arr).convert("RGB").save(dst_png)
+
+
+# cam_stereo_left resolution, read from baseline/data/sanity_check/000000.tiff.
+STF_IMAGE_SIZE = (1920, 1024)
+
+
+def write_placeholder_png(dst_png: Path, _cache: dict = {}) -> None:
+    """Blank image at the real camera resolution. PV-RCNN never reads pixels;
+    OpenPCDet's KITTI loader only reads image_2 for its shape (FOV point
+    filtering, GET_ITEM_LIST is ['points']), so a correctly-sized blank image is
+    equivalent for the lidar-only baseline. Phase 1 deliberately downloads only
+    part of cam_stereo_left (context.md section 7). Not usable for anything that
+    reads pixels."""
+    if "png" not in _cache:
+        from PIL import Image
+        import io
+        buf = io.BytesIO()
+        Image.new("RGB", STF_IMAGE_SIZE).save(buf, format="PNG")
+        _cache["png"] = buf.getvalue()
+    dst_png.write_bytes(_cache["png"])
 
 
 class ImageSource:
@@ -261,6 +309,14 @@ def main() -> int:
     ap.add_argument("--merged-image-zip", type=Path, default=Path("../data/_merged_zips/cam_stereo_left.merged.zip"),
                      help="Pre-merged cam_stereo_left zip (see 01_extract_archives.py docstring). "
                           "Falls back to loose tiffs under --stf-root/cam_stereo_left if not found.")
+    ap.add_argument("--placeholder-images", action="store_true",
+                     help="Write a blank 1920x1024 image_2 PNG for every frame whose real image is "
+                          "unavailable (or for all frames if no image source exists). Shape-only, "
+                          "valid for the lidar-only baseline -- see write_placeholder_png.")
+    ap.add_argument("--keep-sentinel-boxes", action="store_true",
+                     help="Keep Car/Pedestrian/Cyclist rows that have no 3D box (dims -1, location "
+                          "-1000) as real objects instead of remapping them to DontCare. Old "
+                          "behaviour, for comparison only -- see BASELINE_TASKS.md D1.")
     args = ap.parse_args()
 
     source = args.source.resolve()
@@ -300,7 +356,8 @@ def main() -> int:
     seen_keys: dict[str, int] = {}  # STF key -> assigned numeric id (shared across splits, e.g. clear-val may overlap frame numbering with test only by coincidence -- keep unique per key)
 
     total_objects = total_remapped = 0
-    missing_lidar = missing_label = missing_image = 0
+    missing_lidar = missing_label = missing_image = placeholder_image = 0
+    label_stats_by_split: dict[str, Counter] = {}
 
     for split_file, phase, imageset_name in split_specs:
         pairs = load_split(splits_dir / split_file)
@@ -310,6 +367,7 @@ def main() -> int:
             (out / phase / sub).mkdir(parents=True, exist_ok=True)
 
         ids_this_split = []
+        label_stats = label_stats_by_split.setdefault(imageset_name, Counter())
         for seq, frame in pairs:
             key = f"{seq}_{frame}"
             if key not in seen_keys:
@@ -334,7 +392,7 @@ def main() -> int:
             src_label = source / "gt_labels" / "cam_left_labels_TMP" / f"{key}.txt"
             dst_label = out / phase / "label_2" / f"{kitti_id}.txt"
             if src_label.exists():
-                n_obj, n_remap = convert_label(src_label, dst_label)
+                n_obj, n_remap = convert_label(src_label, dst_label, args.keep_sentinel_boxes, label_stats)
                 total_objects += n_obj
                 total_remapped += n_remap
             else:
@@ -348,7 +406,11 @@ def main() -> int:
             if image_source is not None:
                 dst_png = out / phase / "image_2" / f"{kitti_id}.png"
                 if not image_source.convert(key, dst_png):
-                    missing_image += 1
+                    if args.placeholder_images:
+                        write_placeholder_png(dst_png)
+                        placeholder_image += 1
+                    else:
+                        missing_image += 1
 
         (out / "ImageSets" / f"{imageset_name}.txt").write_text("\n".join(ids_this_split) + "\n")
         print(f"  wrote {len(ids_this_split)} ids to ImageSets/{imageset_name}.txt")
@@ -363,8 +425,14 @@ def main() -> int:
     print(f"Total label objects: {total_objects} ({total_remapped} remapped to DontCare)")
     print(f"Missing lidar files: {missing_lidar}")
     print(f"Missing label files (wrote empty label_2): {missing_label}")
+    action = "kept as real objects" if args.keep_sentinel_boxes else "remapped to DontCare"
+    print(f"No-3D-box (sentinel) rows, {action}:")
+    for split, stats in label_stats_by_split.items():
+        per_class = {k.split(":", 1)[1]: v for k, v in stats.items() if k.startswith("sentinel:")}
+        print(f"  {split}: {per_class or 'none'}  (malformed lines skipped: {stats['malformed']})")
     if image_source is not None:
         print(f"Missing image files: {missing_image}")
+        print(f"Placeholder (blank, shape-only) images written: {placeholder_image}")
     print(f"\nOutput: {out}")
     return 0
 
