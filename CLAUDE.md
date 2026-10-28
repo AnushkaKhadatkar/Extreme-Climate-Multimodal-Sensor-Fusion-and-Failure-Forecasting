@@ -68,9 +68,14 @@ _Last updated: 2026-10-28_
   test evals on the correct frame counts → gate report. 1-epoch AP is meaningless
   (clear/mod 61.62). It only proves the pipeline works.
 - Measured: 6 min 56 s per epoch on one RTX 4090, so 80 epochs ≈ 9–10 h plus ≈ 2 h val evals.
-- **Next: the full from-scratch run.** From the repo root:
-  `& .\baseline\scripts\run_baseline_docker.ps1`, then `docker logs -f stf-baseline`.
-  The gate report prints at the end. Don't tune toward 77.05 if it misses (context.md §3).
+- **Baseline reproduced: gate PASS.** Full from-scratch run, clear/moderate 76.59
+  (band 75.05–79.05), best-on-val epoch 67. Table in `baseline/README.md`. Logs are in
+  `baseline/output/kitti_models/pv_rcnn_stf/stf_baseline/baseline_logs/` on Dipin's
+  machine (gitignored). Training actually took 8 h 44 m.
+- Open: dense fog is 6.5 AP below the paper (Linear 298-61). Check protocol, don't tune.
+- Next phase: Model 1 (`context.md` §5, §7), which needs the camera parts listed below.
+- Task tracking is in Linear (team "298A - Team Rocks- Project"; baseline tasks
+  298-47 to 298-62). Keep Linear in sync when a task lands.
 - Commits for Rohil's tasks made on his behalf use `--author="rohilutture <rohil.utture4@gmail.com>"`
   (he agreed). Dipin's own work stays under Dipin.
 - Phase 2 (model 1) needs the full `cam_stereo_left` archive. The Phase 1 download
