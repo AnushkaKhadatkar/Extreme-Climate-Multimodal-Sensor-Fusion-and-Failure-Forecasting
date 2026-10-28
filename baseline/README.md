@@ -1,97 +1,64 @@
 # Baseline reproduction — Hahner et al. ICCV 2021, PV-RCNN † (α=0)
 
-Groundwork for reproducing Table 2's clear/moderate = **77.05** Car 3D AP@0.5 IoU
-(gate: 75.05–79.05, see `../context.md` section 3). This machine is an Apple
-Silicon Mac with no CUDA/spconv, so **everything here is CPU-side data
-preparation** — the actual training/eval run needs a CUDA GPU box (context.md
-section 8: ~150–250 GPU-hours estimated, Docker image with pinned CUDA/PyTorch
-"planned", not built yet).
+Reproduces Table 2's clear/moderate = **77.05** Car 3D AP@0.5 IoU, R40
+(gate: 75.05–79.05, see `../context.md` section 3), trained **from scratch** on
+STF clear weather only.
 
-Read `docs/REPRODUCTION_PLAN.md` first — it has the full rationale for every
-design decision below (why these exact split files, why the class remap, why
-`USE_ROAD_PLANE: False`, etc). This README is just the run order.
+Read `docs/REPRODUCTION_PLAN.md` for the rationale behind every design decision
+(split source, class remap, DontCare handling, `USE_ROAD_PLANE: False`,
+placeholder images, and so on). This README is the status and run order.
 
-## What's done (this machine, CPU-only) — complete, all checks passing
+## Status
 
-1. **Split files resolved** (`splits/*.txt`) — sourced from `MartinHahner/SeeingThroughFog`
-   (branch `main`), the only split source found that reproduces context.md's
-   exact counts (3469/781/1847/946/786). See plan doc §1 for the discrepancy
-   with the upstream devkit's day/night split files (a superset, wrong counts).
-2. **Data extracted** (`scripts/01_extract_archives.py`) — lidar
-   (`lidar_hdl64_strongest`, strongest returns, 5→4 field truncation deferred to
-   step 2) + labels (`gt_labels`) + calibration, filtered to exactly the 7829
-   frames the five splits reference. Ran clean: 7829/7829 frames, 0 missing.
-3. **Converted to KITTI layout** (`scripts/02_convert_to_kitti.py`) —
-   `data/kitti_format/training/{image_2,velodyne,calib,label_2}` +
-   `ImageSets/*.txt` (all five splits under `training/`, see plan doc §2 for
-   why there is no `testing/` directory — a deliberate workaround for a
-   hard-coded OpenPCDet path check, not an oversight). Includes a class remap
-   (`PassengerCar→Car`, `RidableVehicle→Cyclist`), a from-scratch calibration
-   derivation (STF's ROS-tf-tree JSON → KITTI's flat `calib.txt`), and image
-   tone-mapping (STF's raw 16-bit tiffs → 8-bit PNG). Ran clean: all 7829
-   frames converted, 0 missing lidar/label/image files, 77565 label objects
-   (7423 remapped to DontCare — non-vocabulary STF classes, see plan doc §3).
-4. **Calibration/label correctness verified**, two ways:
-   - Visually: `data/sanity_check/000000_final_check.png` — every projected 3D
-     box lands tightly on the real object in the camera image.
-   - Programmatically, on the full converted dataset:
-     `scripts/05_verify_conversion.py` — **all 6 checks pass**, including a
-     fresh 20-frame random projection spot-check (131/131 = 100% of
-     in-front-of-camera boxes project into image bounds).
-   This was the single highest risk item (plan doc risk #4) and it passed
-   cleanly.
-5. **OpenPCDet configs prepared** (`configs/kitti_dataset_stf.yaml`,
-   `configs/pv_rcnn_stf.yaml`) — stock `kitti_dataset.yaml` / `pv_rcnn.yaml`
-   with only the minimal changes needed to point at our data (see each file's
-   header comment for the itemized diff from stock).
+Done and verified on the full dataset (CPU side, `scripts/01`, `02`, `05`, `06`):
 
-Disk usage: `data/kitti_format` (final product) is ~21GB. `data/kitti_source`
-(8.5GB, pre-conversion staging) and `data/_merged_zips` (37GB, the merged
-cam_stereo_left archive used only for image extraction) are both safe to
-delete once you've copied `kitti_format` to the GPU box — kept for now since
-disk isn't tight (378GB free as of this writing) and re-generating
-`_merged_zips` in particular is the slowest step to redo (~20+ min).
+- Split counts match context.md exactly (3469/781/1847/946/786); 7829/7829 frames
+  converted, with no missing lidar, label, calib or image files.
+- Objects with no 3D box become DontCare (plan doc §3). All 8 checks in
+  `05_verify_conversion.py` pass, including the lidar→camera extrinsic (points
+  inside GT boxes) and projected-vs-labelled 2D box IoU (median 0.89).
+- Images are shape-only placeholders (plan doc §6). PV-RCNN is lidar-only.
 
-## What's NOT done (needs the GPU box)
+GPU side (`scripts/03`, `04`, `07`, `run_baseline_docker.ps1`, `docker/`):
 
-- Running `scripts/03_create_infos.py` (needs `pcdet` installed, which needs
-  spconv/CUDA) to generate the five `.pkl` info files + ground-truth database.
-- Actual training (`scripts/04_train_and_eval.sh`) — 80 epochs, PV-RCNN,
-  standard OpenPCDet policy, matching the paper's stated protocol.
-- Checkpoint selection by best-on-clear-val performance (not last-epoch) —
-  the paper's own stated selection rule, encoded as `--eval_all` in step 4.
-- Evaluation on all three STF test splits (clear/light-fog/dense-fog) and the
-  77.05 AP gate check itself.
+- Docker image pinned to an OpenPCDet commit and package versions (`docker/`).
+- `04_train_and_eval.sh` trains, keeps all 80 checkpoints, selects best-on-val
+  automatically (`07_read_eval_logs.py`), evaluates each test split on its
+  **own** info file, and prints the gate verdict.
+- **Not yet done: the from-scratch 80-epoch training run and the gate check.**
+  Training time on one RTX 4090 is an estimate until timed (context.md section 8).
 
-That's it — everything else is done and verified. `03_create_infos.py` is the
-next actual step, and it needs `pcdet` importable, which is the first thing
-that needs CUDA/spconv.
+## Run order (Windows + Docker Desktop + NVIDIA GPU)
 
-## Run order on the GPU box
+From the repo root, after `01`/`02` have produced `baseline/data/kitti_format/`:
 
-```bash
-# 1. Verify the converted data one more time in the target environment
-cd baseline/scripts
-python 05_verify_conversion.py --kitti-format ../data/kitti_format
+```powershell
+# optional: 1-epoch smoke test of the whole pipeline (tag 'smoke', ~30-60 min)
+powershell -File baseline/scripts/run_baseline_docker.ps1 -Smoke -Foreground
 
-# 2. Deploy configs into an OpenPCDet checkout (see 04_train_and_eval.sh's
-#    header comment for the exact required paths -- OpenPCDet resolves
-#    _BASE_CONFIG_ relative to tools/, so placement matters)
-cp ../configs/pv_rcnn_stf.yaml          $OPENPCDET_ROOT/tools/cfgs/kitti_models/
-cp ../configs/kitti_dataset_stf.yaml    $OPENPCDET_ROOT/tools/cfgs/dataset_configs/
-cp -r ../data/kitti_format              $OPENPCDET_ROOT/data/kitti_format
-# ^ copy, not symlink, and onto local NVMe -- context.md section 8: don't train
-#   off a mounted/network drive.
-
-# 3. Generate info files + GT database (inside the OpenPCDet env)
-python 03_create_infos.py --cfg ../configs/kitti_dataset_stf.yaml \
-    --data-path $OPENPCDET_ROOT/data/kitti_format \
-    --openpcdet-root $OPENPCDET_ROOT
-
-# 4. Train + evaluate
-OPENPCDET_ROOT=$OPENPCDET_ROOT ./04_train_and_eval.sh
+# the real run: builds the image and data volume if missing, generates infos,
+# then trains 80 epochs + selects + evaluates in a detached container
+powershell -File baseline/scripts/run_baseline_docker.ps1
+docker logs -f stf-baseline
 ```
 
+Results: `baseline/output/kitti_models/pv_rcnn_stf/stf_baseline/baseline_logs/`
+(`train.log`, `eval_all_val.log`, `eval_test_*.log`). Re-print the gate at any time:
+
+```powershell
+python baseline/scripts/07_read_eval_logs.py gate --logs (Get-ChildItem baseline/output/kitti_models/pv_rcnn_stf/stf_baseline/baseline_logs/eval_test_*.log)
+```
+
+On a Linux GPU box without the PowerShell wrapper, the same steps are: deploy the
+two configs into `<openpcdet>/tools/cfgs/{kitti_models,dataset_configs}/`, copy
+`data/kitti_format` onto local disk at `<openpcdet>/data/kitti_format`, run
+`03_create_infos.py`, then `OPENPCDET_ROOT=<openpcdet> ./04_train_and_eval.sh`.
+
+**Reproducibility note (R6).** `--fix_random_seed` fixes OpenPCDet's seeds, but
+cuDNN and spconv kernels are not bitwise deterministic, so two identical runs can
+differ by a fraction of an AP point. Put that spread next to the ±2 gate when
+reporting. Only spend GPU hours on a second seed if the result lands near a band
+edge.
 ## Gate check
 
 After step 4, read the Car AP@0.5, moderate column, from `eval_test_clear.log`.
