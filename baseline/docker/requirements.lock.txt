@@ -44,3 +44,17 @@ tqdm==4.70.1
 triton==2.0.0
 typing_extensions==4.16.0
 urllib3==1.26.13
+# numba-cuda: NVIDIA's maintained CUDA target. numba 0.68's built-in numba.cuda
+# fails to compile rotate_iou.py's kernels ("Signature mismatch"), and older
+# numba (0.56, 0.60) segfaults on this GPU. numba-cuda brings its own CUDA 12
+# runtime via the nvidia-*-cu12 wheels, separate from torch's CUDA 11.8.
+# Verified: rotate_iou_gpu_eval matches shapely to 3e-5 IoU on 1113 box pairs.
+numba-cuda==0.30.4
+cuda-bindings==12.9.10
+cuda-core==1.2.2
+cuda-pathfinder==1.8.3
+nvidia-cuda-cccl-cu12==12.9.27
+nvidia-cuda-nvcc-cu12==12.9.86
+nvidia-cuda-nvrtc-cu12==12.9.86
+nvidia-cuda-runtime-cu12==12.9.79
+nvidia-nvjitlink-cu12==12.9.86
