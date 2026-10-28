@@ -244,6 +244,26 @@ def tonemap_and_convert(raw_bytes_or_path, dst_png: Path) -> None:
     Image.fromarray(arr).convert("RGB").save(dst_png)
 
 
+# cam_stereo_left resolution, read from baseline/data/sanity_check/000000.tiff.
+STF_IMAGE_SIZE = (1920, 1024)
+
+
+def write_placeholder_png(dst_png: Path, _cache: dict = {}) -> None:
+    """Blank image at the real camera resolution. PV-RCNN never reads pixels;
+    OpenPCDet's KITTI loader only reads image_2 for its shape (FOV point
+    filtering, GET_ITEM_LIST is ['points']), so a correctly-sized blank image is
+    equivalent for the lidar-only baseline. Phase 1 deliberately downloads only
+    part of cam_stereo_left (context.md section 7). Not usable for anything that
+    reads pixels."""
+    if "png" not in _cache:
+        from PIL import Image
+        import io
+        buf = io.BytesIO()
+        Image.new("RGB", STF_IMAGE_SIZE).save(buf, format="PNG")
+        _cache["png"] = buf.getvalue()
+    dst_png.write_bytes(_cache["png"])
+
+
 class ImageSource:
     """Reads cam_stereo_left tiffs either from a pre-merged zip (fast path, no
     37GB re-extraction) or from loose files on disk. STF's cam_stereo_left
@@ -289,6 +309,10 @@ def main() -> int:
     ap.add_argument("--merged-image-zip", type=Path, default=Path("../data/_merged_zips/cam_stereo_left.merged.zip"),
                      help="Pre-merged cam_stereo_left zip (see 01_extract_archives.py docstring). "
                           "Falls back to loose tiffs under --stf-root/cam_stereo_left if not found.")
+    ap.add_argument("--placeholder-images", action="store_true",
+                     help="Write a blank 1920x1024 image_2 PNG for every frame whose real image is "
+                          "unavailable (or for all frames if no image source exists). Shape-only, "
+                          "valid for the lidar-only baseline -- see write_placeholder_png.")
     ap.add_argument("--keep-sentinel-boxes", action="store_true",
                      help="Keep Car/Pedestrian/Cyclist rows that have no 3D box (dims -1, location "
                           "-1000) as real objects instead of remapping them to DontCare. Old "
@@ -332,7 +356,7 @@ def main() -> int:
     seen_keys: dict[str, int] = {}  # STF key -> assigned numeric id (shared across splits, e.g. clear-val may overlap frame numbering with test only by coincidence -- keep unique per key)
 
     total_objects = total_remapped = 0
-    missing_lidar = missing_label = missing_image = 0
+    missing_lidar = missing_label = missing_image = placeholder_image = 0
     label_stats_by_split: dict[str, Counter] = {}
 
     for split_file, phase, imageset_name in split_specs:
@@ -382,7 +406,11 @@ def main() -> int:
             if image_source is not None:
                 dst_png = out / phase / "image_2" / f"{kitti_id}.png"
                 if not image_source.convert(key, dst_png):
-                    missing_image += 1
+                    if args.placeholder_images:
+                        write_placeholder_png(dst_png)
+                        placeholder_image += 1
+                    else:
+                        missing_image += 1
 
         (out / "ImageSets" / f"{imageset_name}.txt").write_text("\n".join(ids_this_split) + "\n")
         print(f"  wrote {len(ids_this_split)} ids to ImageSets/{imageset_name}.txt")
@@ -404,6 +432,7 @@ def main() -> int:
         print(f"  {split}: {per_class or 'none'}  (malformed lines skipped: {stats['malformed']})")
     if image_source is not None:
         print(f"Missing image files: {missing_image}")
+        print(f"Placeholder (blank, shape-only) images written: {placeholder_image}")
     print(f"\nOutput: {out}")
     return 0
 
