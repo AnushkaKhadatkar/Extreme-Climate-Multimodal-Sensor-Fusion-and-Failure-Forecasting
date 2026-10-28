@@ -197,7 +197,9 @@ Gate is read only after R1 + R3 + R8 are all in.
 | R6 run-to-run spread | Rohil | done, merged (README note) |
 | R7 README drift | Rohil | done, merged (+ `run_baseline_docker.ps1`) |
 | R8 regen infos + re-eval after D1 | Rohil | done via 1-epoch smoke test: whole pipeline runs end to end |
-| **Baseline run: 80 epochs from scratch + gate** | Dipin | **ready to start** (~10 h train + ~2 h val evals, measured 6m56s/epoch) |
+| **Baseline run: 80 epochs from scratch + gate** | Dipin | **done: gate PASS**, clear/moderate 76.59 (epoch 67); results in `baseline/README.md` |
+| Dense-fog gap vs paper (39.49 vs 46.00) | unassigned | todo (Linear 298-61) |
+| Runner regenerated infos every run | Rohil | fix on `rohil/fix-runner-infos-check`, PR pending (Linear 298-62) |
 | D1 sentinel → DontCare | Dipin | done on `dipin/baseline-data-checks`: 11,772 Car rows remapped (test_clear 3,130) |
 | D2 extrinsic check | Dipin | done, passes: 61/61 boxes contain points |
 | D3 2D IoU projection check | Dipin | done, passes: median IoU 0.89 |

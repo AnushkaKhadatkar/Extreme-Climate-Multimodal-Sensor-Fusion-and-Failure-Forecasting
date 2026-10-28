@@ -25,8 +25,20 @@ GPU side (`scripts/03`, `04`, `07`, `run_baseline_docker.ps1`, `docker/`):
 - `04_train_and_eval.sh` trains, keeps all 80 checkpoints, selects best-on-val
   automatically (`07_read_eval_logs.py`), evaluates each test split on its
   **own** info file, and prints the gate verdict.
-- **Not yet done: the from-scratch 80-epoch training run and the gate check.**
-  Training time on one RTX 4090 is an estimate until timed (context.md section 8).
+- **Reproduced: gate PASS.** From-scratch 80-epoch run, best-on-val checkpoint
+  epoch 67. Car 3D AP, R40, IoU 0.5:
+
+  | Split | Easy | Moderate | Hard | Paper (E / M / H) |
+  | --- | --- | --- | --- | --- |
+  | Clear | 78.99 | **76.59** | 71.64 | 79.61 / 77.05 / 71.03 |
+  | Light fog | 68.07 | 68.26 | 66.49 | 69.55 / 70.17 / 68.44 |
+  | Dense fog | 38.23 | 39.49 | 38.75 | 45.03 / 46.00 / 45.08 |
+
+  Clear/moderate 76.59 is inside 75.05–79.05. The moderate > easy inversion
+  reproduces on both fog splits. Dense fog is 6.5 AP below the paper and is under
+  investigation (Linear 298-61), not tuned toward. Single seed: run-to-run spread is
+  not yet measured. Measured cost on one RTX 4090: 8 h 44 m training plus ~45 min
+  of val evals.
 
 ## Run order (Windows + Docker Desktop + NVIDIA GPU)
 
