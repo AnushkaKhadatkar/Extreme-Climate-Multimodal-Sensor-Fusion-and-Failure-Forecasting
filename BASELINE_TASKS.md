@@ -189,19 +189,27 @@ Gate is read only after R1 + R3 + R8 are all in.
 
 | Task | Owner | Status |
 | --- | --- | --- |
-| R1 test splits use own infos | Rohil | todo |
-| R2 dead config keys | Rohil | todo |
-| R3 checkpoint selection | Rohil | todo |
-| R4 grep hint | Rohil | todo |
-| R5 pin Docker | Rohil | todo |
-| R6 run-to-run spread | Rohil | todo |
-| R7 README drift | Rohil | todo |
-| R8 regen infos + re-eval after D1 | Rohil | blocked on D8 |
-| D1 sentinel → DontCare | Dipin | todo |
-| D2 extrinsic check | Dipin | todo |
-| D3 2D IoU projection check | Dipin | todo |
-| D4 difficulty-field audit | Dipin | todo |
-| D5 lidar audit | Dipin | todo |
-| D6 fixed tone-map option | Dipin | todo |
-| D7 plan doc drift | Dipin | todo |
-| D8 ship reconverted labels | Dipin | blocked on D1 + data |
+| R1 test splits use own infos | Rohil | done, merged: smoke test evaluated 1847/946/786 frames |
+| R2 dead config keys | Rohil | done, merged |
+| R3 checkpoint selection | Rohil | done, merged (`07_read_eval_logs.py`) |
+| R4 grep hint | Rohil | done, merged (automatic gate report) |
+| R5 pin Docker | Rohil | done, merged: OpenPCDet 233f849, `requirements.lock.txt`, numba-cuda fix for the eval crash |
+| R6 run-to-run spread | Rohil | done, merged (README note) |
+| R7 README drift | Rohil | done, merged (+ `run_baseline_docker.ps1`) |
+| R8 regen infos + re-eval after D1 | Rohil | done via 1-epoch smoke test: whole pipeline runs end to end |
+| **Baseline run: 80 epochs from scratch + gate** | Dipin | **ready to start** (~10 h train + ~2 h val evals, measured 6m56s/epoch) |
+| D1 sentinel → DontCare | Dipin | done on `dipin/baseline-data-checks`: 11,772 Car rows remapped (test_clear 3,130) |
+| D2 extrinsic check | Dipin | done, passes: 61/61 boxes contain points |
+| D3 2D IoU projection check | Dipin | done, passes: median IoU 0.89 |
+| D4 difficulty-field audit | Dipin | done: KITTI scales, tiers valid |
+| D5 lidar audit | Dipin | done: intensity 0–255, ground −1.95 m, 2× frames = one drive |
+| D6 fixed tone-map option | Dipin | todo (Phase 2 prep) |
+| D7 plan doc drift | Dipin | done |
+| D8 ship reconverted data | Dipin | ready: `baseline/data/kitti_format/` (placeholder images, see REPRODUCTION_PLAN §6) |
+
+### Hand-off notes for Rohil
+
+- `ImageSets/*.txt` and frame IDs are unchanged, so existing checkpoints still apply.
+- Copy the whole reconverted `baseline/data/kitti_format/training/` to the GPU box
+  (labels changed; images are now shape-only placeholders), then run R8.
+- Expect test GT Car counts to drop by the remapped rows above. That is the point of D1.

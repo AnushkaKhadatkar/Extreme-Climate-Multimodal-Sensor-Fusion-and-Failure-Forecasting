@@ -15,13 +15,12 @@
 #     this repo's baseline/data/kitti_format/ to
 #     <openpcdet_root>/data/kitti_format/ on the GPU box (see this file's
 #     placement note in pv_rcnn_stf.yaml's header).
-#   - DATA_SPLIT / INFO_PATH: stock OpenPCDet only names train/val. We add
-#     test_clear / test_light_fog / test_dense_fog as three *separate* named
-#     splits (not folded into one "test") because Table 2 reports them as three
-#     independent columns -- merging them would make it impossible to reproduce
-#     the moderate>easy inversion context.md calls out as a correctness signal
-#     (section 3: "Reproducing the inversion is positive evidence the protocol
-#     matches").
+#   - DATA_SPLIT / INFO_PATH: unchanged train/val here. The three STF test splits
+#     (test_clear / test_light_fog / test_dense_fog) are evaluated as separate
+#     Table 2 columns by overriding BOTH keys at test time, e.g.
+#       --set DATA_CONFIG.DATA_SPLIT.test test_clear DATA_CONFIG.INFO_PATH.test kitti_infos_test_clear.pkl
+#     (see 04_train_and_eval.sh). Overriding DATA_SPLIT alone silently evaluates
+#     val again, because KittiDataset loads frames + GT from INFO_PATH.
 #   - Everything below POINT_CLOUD_RANGE is byte-for-byte identical to stock
 #     kitti_dataset.yaml (fetched 2026-09-22 from open-mmlab/OpenPCDet@master).
 #
@@ -45,17 +44,6 @@ DATA_SPLIT: {
 INFO_PATH: {
     'train': [kitti_infos_train.pkl],
     'test': [kitti_infos_val.pkl],
-}
-
-# Additional named splits for the three STF test sets (clear/light-fog/dense-fog).
-# Not part of stock OpenPCDet's schema -- generate these info files with
-# create_kitti_infos using DATA_SPLIT test=test_clear / test_light_fog /
-# test_dense_fog in three separate passes (see docs/REPRODUCTION_PLAN.md).
-EXTRA_TEST_SPLITS: ['test_clear', 'test_light_fog', 'test_dense_fog']
-EXTRA_TEST_INFO_PATH: {
-    'test_clear': [kitti_infos_test_clear.pkl],
-    'test_light_fog': [kitti_infos_test_light_fog.pkl],
-    'test_dense_fog': [kitti_infos_test_dense_fog.pkl],
 }
 
 GET_ITEM_LIST: ["points"]

@@ -61,10 +61,17 @@ complete camera archive. `baseline/data/kitti_source/` can be deleted afterwards
 
 _Last updated: 2026-10-28_
 
-- `main`: has the task split (`BASELINE_TASKS.md`) and this file.
-- `dipin/baseline-data-checks`: D1–D5, D7 and D8 done and run on the real data. All 8
-  conversion checks pass. Waiting to merge.
-- `rohil/baseline-eval-fixes`: R1–R7 in progress (eval-split fix, checkpoint selection,
-  Docker pinning, README).
-- Next: merge both branches, build the Docker image, generate infos, then start the
-  full 80-epoch training run from scratch.
+- Both branches are merged into `main`. All D and R tasks are done except D6 (Phase 2 prep).
+- Docker image `stf-openpcdet:pinned` is built on Dipin's machine, and data volume
+  `stf_kitti` holds kitti_format plus infos.
+- 1-epoch smoke test passed end to end (tag `smoke`): train → best-on-val → three
+  test evals on the correct frame counts → gate report. 1-epoch AP is meaningless
+  (clear/mod 61.62). It only proves the pipeline works.
+- Measured: 6 min 56 s per epoch on one RTX 4090, so 80 epochs ≈ 9–10 h plus ≈ 2 h val evals.
+- **Next: the full from-scratch run.** From the repo root:
+  `& .\baseline\scripts\run_baseline_docker.ps1`, then `docker logs -f stf-baseline`.
+  The gate report prints at the end. Don't tune toward 77.05 if it misses (context.md §3).
+- Commits for Rohil's tasks made on his behalf use `--author="rohilutture <rohil.utture4@gmail.com>"`
+  (he agreed). Dipin's own work stays under Dipin.
+- Phase 2 (model 1) needs the full `cam_stereo_left` archive. The Phase 1 download
+  deliberately skipped parts `.z10`, `.z17`, `.z22` and the final `.zip`.
