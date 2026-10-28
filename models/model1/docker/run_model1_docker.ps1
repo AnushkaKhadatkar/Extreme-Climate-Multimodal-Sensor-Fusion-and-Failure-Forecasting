@@ -27,12 +27,14 @@ param(
     [string]$Name = "stf-model1",
     [string]$BaseImage = "stf-openpcdet:pinned",
     [string]$Image = "stf-model1:pinned",
-    [string]$Volume = "stf_kitti_mm"
+    [string]$Volume = "stf_kitti_mm",
+    [string]$KittiDir = "",   # default: <repo>\baseline\data\kitti_format
+    [string]$ImageDir = ""    # default: <repo>\data\model1\image_2
 )
 $ErrorActionPreference = "Stop"
 $repo = (Resolve-Path "$PSScriptRoot\..\..\..").Path
-$kitti = "$repo\baseline\data\kitti_format"
-$images = "$repo\data\model1\image_2"
+$kitti = if ($KittiDir) { (Resolve-Path $KittiDir).Path } else { "$repo\baseline\data\kitti_format" }
+$images = if ($ImageDir) { (Resolve-Path $ImageDir).Path } else { "$repo\data\model1\image_2" }
 $output = "$repo\models\model1\output"
 New-Item -ItemType Directory -Force $output | Out-Null
 
