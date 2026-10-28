@@ -11,7 +11,7 @@ Full design and metric definitions: `docs/DESIGN.md`.
 | Milestone | Work | Status |
 | --- | --- | --- |
 | M0 | Folder scaffold, README, DESIGN.md | done |
-| M1 | Camera data: extract left-camera images for all 7,829 split frames, fixed global tone map, verify | scripts on `sarvesh/model1-data`; images extracted (7,829/7,829) |
+| M1 | Camera data: extract, demosaic, rectify and tone-map left-camera images for all 7,829 split frames; verify | done (`sarvesh/model1-data`): 7,829/7,829 images; alignment median (0, 0) px; all checks pass |
 | M2 | Docker image, dataset config, model code, tools, tests | code done: Docker + dataset config on `sarvesh/model1-data`; model, tools and 20 passing tests on `anushka/model1-scaffold` |
 | M3 | 200-frame slice: overfit test + epoch timing | todo |
 | M4 | Lidar-only ablation, full training | todo |

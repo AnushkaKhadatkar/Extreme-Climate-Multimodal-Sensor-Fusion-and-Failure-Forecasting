@@ -20,7 +20,12 @@ reported as such.
 - **Lidar:** HDL-64 strongest returns, `(N, 4)` points from the baseline's
   `kitti_format` conversion. Intensity is on a 0–255 scale (D5 audit).
 - **Camera:** left RGB (`cam_stereo_left`), 1920×1024, resized to 960×512 inside
-  the model.
+  the model. The raw TIFFs are GRBG Bayer mosaics and are **unrectified**
+  (K: f = 2613 px, barrel distortion D[0] = −0.568). Every frame's calibration
+  uses the rectified P (f = 2356 px). `data_prep/02_build_image_2.py` therefore
+  demosaics, then rectifies with the calibration file's own K, D, R, P. Measured
+  effect on lidar-image alignment: median offset (+4, +12) px before
+  rectification, (0, 0) px after (`03_verify_images.py`, 91 frames).
 - **Calibration:** per frame from the dataset (`calib_matricies`):
   `trans_lidar_to_cam = R0_rect · Tr_velo_to_cam`, `trans_cam_to_img = P2`.
   The extrinsic is verified by checks 7 and 8 in `05_verify_conversion.py`.
@@ -32,8 +37,11 @@ The baseline's `tonemap_and_convert` stretches each frame between its own 1st an
 99th percentiles. That normalises away fog's contrast loss (BASELINE_TASKS D6)
 and would hide degradation from the camera stream. Model 1 uses one **fixed
 global** mapping: 1st/99th percentiles over 300 seeded train frames
-(`data_prep/tonemap_stats.json`), applied unchanged to every frame of every split.
-`03_verify_images.py` checks that dense fog keeps lower contrast than clear.
+(`data_prep/tonemap_stats.json`, after one fixed grey-world white balance), applied
+unchanged to every frame of every split. Recorded, not tested: on the sampled
+frames, contrast relative to brightness (grey std / mean) is 0.68 in dense fog
+against 1.00 in clear test. Whole-image contrast also tracks day vs night, so it
+is not used as a pass/fail check.
 
 ### Protocol decision: no GT sampling
 
