@@ -35,6 +35,28 @@ whenever a task lands, a branch merges, or a run starts or finishes.**
 - Converted data: `baseline/data/kitti_format/` (gitignored, ~21 GB, placeholder images)
 - Training runs in Docker (`baseline/docker/`), with GPU passthrough confirmed working.
 
+## Rebuilding `baseline/data/kitti_format/` on another machine (~21 GB)
+
+It is gitignored, so each machine builds its own from the raw data. The output is
+identical, because frame IDs come from the split files in git. Needs Python 3.10+
+with `numpy scipy pillow matplotlib`, and only these raw files under `data/stf/`
+(~9 GB, not the full download):
+
+- `lidar_hdl64_strongest/` (every `.z01`…`.z06` part plus `.zip`)
+- `gt_labels/cam_left_labels_TMP.zip`, `gt_labels/gated_labels_TMPv2.zip`
+- `calib_cam_stereo_left.json`, `calib_cam_stereo_right.json`, `calib_gated_bwv.json`, `calib_tf_tree_full.json`
+
+```
+cd baseline/scripts
+python 01_extract_archives.py                      # -> baseline/data/kitti_source (~9 GB)
+python 02_convert_to_kitti.py --placeholder-images # -> baseline/data/kitti_format (~21 GB)
+python 05_verify_conversion.py                     # must print ALL CHECKS PASSED
+```
+
+Expect: 7829/7829 frames, "11,772 Car rows" remapped to DontCare in total across
+splits, 7829 placeholder images. Do not drop `--placeholder-images`: Phase 1 has no
+complete camera archive. `baseline/data/kitti_source/` can be deleted afterwards.
+
 ## Current state (update this)
 
 _Last updated: 2026-10-28_
