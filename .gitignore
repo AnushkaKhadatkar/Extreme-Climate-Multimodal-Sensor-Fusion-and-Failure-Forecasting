@@ -11,6 +11,7 @@ baseline/data/kitti_format/gt_database/
 # Training checkpoints and eval output — regenerate with the GPU-box run order
 # in baseline/README.md (too large and too easy to regenerate to version)
 baseline/output/
+models/*/output/
 
 # Local debug/build logs from running the pipeline scripts
 convert_log*.txt

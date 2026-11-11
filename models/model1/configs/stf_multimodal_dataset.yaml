@@ -1,0 +1,84 @@
+# Dataset config for Model 1 (lidar + left RGB) on the STF data converted to
+# KITTI layout. Starts from the baseline's baseline/configs/kitti_dataset_stf.yaml
+# (same splits, same infos layout, same point-cloud range, voxeliser and lidar
+# augmentation) and changes only what fusion needs. A standalone copy rather than
+# a _BASE_CONFIG_ chain: OpenPCDet only resolves _BASE_CONFIG_ one level deep, and
+# baseline/scripts/03_create_infos.py loads this file directly.
+#
+# Differences from the baseline dataset config, and why:
+#   - DATA_PATH: '../data/kitti_format_mm', the stf_kitti_mm Docker volume. Same
+#     velodyne/calib/label_2/ImageSets as the baseline, but image_2 holds the REAL
+#     left-camera images (models/model1/data_prep/), not the baseline's
+#     placeholders. The baseline's data is never modified.
+#   - GET_ITEM_LIST adds "images" (HxWx3 float in [0, 1]) and "calib_matricies"
+#     (trans_lidar_to_cam = R0_rect @ Tr_velo_to_cam, trans_cam_to_img = P2), which
+#     Model 1 needs to project BEV cells into the image.
+#   - gt_sampling REMOVED. It pastes objects' lidar points from other frames into
+#     the scene, but the camera image has no matching pixels, so camera tokens at
+#     pasted objects would show background. That teaches the fusion that camera and
+#     lidar disagree on clean data. Recorded as a Model 1 protocol decision in
+#     docs/DESIGN.md. Model 1's lidar-only ablation uses this same config, so the
+#     comparison within Model 1 stays like-for-like.
+#   - No EXTRA_TEST_* keys (OpenPCDet never reads them, BASELINE_TASKS R2). Test
+#     splits are selected with --set DATA_CONFIG.DATA_SPLIT.test <split>
+#     DATA_CONFIG.INFO_PATH.test kitti_infos_<split>.pkl (R1).
+#
+# World flip/rotation/scaling stay as in the baseline. They move the points but
+# not the image, so Model 1 undoes them before projecting (OpenPCDet records
+# flip_x, noise_rot and noise_scale in each sample for exactly this).
+
+DATASET: 'KittiDataset'
+DATA_PATH: '../data/kitti_format_mm'
+
+POINT_CLOUD_RANGE: [0, -40, -3, 70.4, 40, 1]
+
+DATA_SPLIT: {
+    'train': train,
+    'test': val
+}
+
+INFO_PATH: {
+    'train': [kitti_infos_train.pkl],
+    'test': [kitti_infos_val.pkl],
+}
+
+GET_ITEM_LIST: ["points", "images", "calib_matricies"]
+FOV_POINTS_ONLY: True
+
+DATA_AUGMENTOR:
+    DISABLE_AUG_LIST: ['placeholder']
+    AUG_CONFIG_LIST:
+        - NAME: random_world_flip
+          ALONG_AXIS_LIST: ['x']
+
+        - NAME: random_world_rotation
+          WORLD_ROT_ANGLE: [-0.78539816, 0.78539816]
+
+        - NAME: random_world_scaling
+          WORLD_SCALE_RANGE: [0.95, 1.05]
+
+
+POINT_FEATURE_ENCODING: {
+    encoding_type: absolute_coordinates_encoding,
+    used_feature_list: ['x', 'y', 'z', 'intensity'],
+    src_feature_list: ['x', 'y', 'z', 'intensity'],
+}
+
+
+DATA_PROCESSOR:
+    - NAME: mask_points_and_boxes_outside_range
+      REMOVE_OUTSIDE_BOXES: True
+
+    - NAME: shuffle_points
+      SHUFFLE_ENABLED: {
+        'train': True,
+        'test': False
+      }
+
+    - NAME: transform_points_to_voxels
+      VOXEL_SIZE: [0.05, 0.05, 0.1]
+      MAX_POINTS_PER_VOXEL: 5
+      MAX_NUMBER_OF_VOXELS: {
+        'train': 16000,
+        'test': 40000
+      }

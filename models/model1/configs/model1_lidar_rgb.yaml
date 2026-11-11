@@ -1,0 +1,165 @@
+# Model 1: reliability-gated multimodal transformer, lidar + left RGB.
+# See ../docs/DESIGN.md. Deployed to <OpenPCDet>/tools/cfgs/model1/ by
+# ../docker/run_model1_docker.ps1; _BASE_CONFIG_ is resolved from tools/.
+#
+# Lidar trunk and head are OpenPCDet's KITTI SECOND settings (VoxelBackBone8x,
+# BaseBEVBackbone, AnchorHeadSingle, same anchors incl. Car bottom z = -1.78),
+# so Model 1 adds fusion to a standard KITTI detector rather than a bespoke one.
+
+CLASS_NAMES: ['Car', 'Pedestrian', 'Cyclist']
+
+DATA_CONFIG:
+    _BASE_CONFIG_: cfgs/dataset_configs/stf_multimodal_dataset.yaml
+    DATA_AUGMENTOR:
+        DISABLE_AUG_LIST: ['placeholder']
+        AUG_CONFIG_LIST:
+            - NAME: random_world_flip
+              ALONG_AXIS_LIST: ['x']
+
+            - NAME: random_world_rotation
+              WORLD_ROT_ANGLE: [-0.78539816, 0.78539816]
+
+            - NAME: random_world_scaling
+              WORLD_SCALE_RANGE: [0.95, 1.05]
+
+            # Generic, non-weather stream dropout (rgfusion/modality_dropout.py).
+            # At most one stream per sample; 50% of samples stay clean.
+            - NAME: model1_modality_dropout
+              P_LIDAR: 0.25
+              P_CAMERA: 0.25
+              LIDAR_MODES: ['sparse', 'noise', 'sector']
+              CAMERA_MODES: ['zeros', 'noise', 'mask']
+              SPARSE_KEEP: 0.02
+              MASK_FRACTION: [0.4, 0.8]
+              NOISE_RANGE_MIN: [0.0, -40.0, -3.0]
+              NOISE_RANGE_MAX: [70.4, 40.0, 1.0]
+
+MODEL:
+    NAME: Model1Fusion
+
+    VFE:
+        NAME: MeanVFE
+
+    BACKBONE_3D:
+        NAME: VoxelBackBone8x
+
+    MAP_TO_BEV:
+        NAME: HeightCompression
+        NUM_BEV_FEATURES: 256
+
+    BACKBONE_2D:
+        NAME: BaseBEVBackbone
+        LAYER_NUMS: [5, 5]
+        LAYER_STRIDES: [1, 2]
+        NUM_FILTERS: [128, 256]
+        UPSAMPLE_STRIDES: [1, 2]
+        NUM_UPSAMPLE_FILTERS: [256, 256]
+
+    FUSION:
+        USE_CAMERA: True
+        IMAGE_SIZE: [512, 960]            # (H, W) the 1024x1920 image is resized to
+        IMAGE_CHANNELS: 256               # FPN output, stride 8
+        PRETRAINED_IMAGE_BACKBONE: True   # ImageNet ResNet-50, baked into the Docker image
+        FREEZE_IMAGE_BACKBONE: True       # see rgfusion/image_backbone.py
+        SAMPLE_HEIGHTS: [-1.8, -1.2, -0.6, 0.0]   # lidar z of the K points per BEV cell
+        TOKEN_DIM: 128
+        NUM_HEADS: 8
+        NUM_LAYERS: 2
+        AUX_WEIGHT: 0.5
+        RELIABILITY_WEIGHT: 1.0
+        TAU_MOMENTUM: 0.01
+
+    DENSE_HEAD:
+        NAME: AnchorHeadSingle
+        CLASS_AGNOSTIC: False
+
+        USE_DIRECTION_CLASSIFIER: True
+        DIR_OFFSET: 0.78539
+        DIR_LIMIT_OFFSET: 0.0
+        NUM_DIR_BINS: 2
+
+        ANCHOR_GENERATOR_CONFIG: [
+            {
+                'class_name': 'Car',
+                'anchor_sizes': [[3.9, 1.6, 1.56]],
+                'anchor_rotations': [0, 1.57],
+                'anchor_bottom_heights': [-1.78],
+                'align_center': False,
+                'feature_map_stride': 8,
+                'matched_threshold': 0.6,
+                'unmatched_threshold': 0.45
+            },
+            {
+                'class_name': 'Pedestrian',
+                'anchor_sizes': [[0.8, 0.6, 1.73]],
+                'anchor_rotations': [0, 1.57],
+                'anchor_bottom_heights': [-0.6],
+                'align_center': False,
+                'feature_map_stride': 8,
+                'matched_threshold': 0.5,
+                'unmatched_threshold': 0.35
+            },
+            {
+                'class_name': 'Cyclist',
+                'anchor_sizes': [[1.76, 0.6, 1.73]],
+                'anchor_rotations': [0, 1.57],
+                'anchor_bottom_heights': [-0.6],
+                'align_center': False,
+                'feature_map_stride': 8,
+                'matched_threshold': 0.5,
+                'unmatched_threshold': 0.35
+            }
+        ]
+
+        TARGET_ASSIGNER_CONFIG:
+            NAME: AxisAlignedTargetAssigner
+            POS_FRACTION: -1.0
+            SAMPLE_SIZE: 512
+            NORM_BY_NUM_EXAMPLES: False
+            MATCH_HEIGHT: False
+            BOX_CODER: ResidualCoder
+
+        LOSS_CONFIG:
+            LOSS_WEIGHTS: {
+                'cls_weight': 1.0,
+                'loc_weight': 2.0,
+                'dir_weight': 0.2,
+                'code_weights': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+            }
+
+    POST_PROCESSING:
+        RECALL_THRESH_LIST: [0.3, 0.5, 0.7]
+        SCORE_THRESH: 0.1
+        OUTPUT_RAW_SCORE: False
+
+        EVAL_METRIC: kitti
+
+        NMS_CONFIG:
+            MULTI_CLASSES_NMS: False
+            NMS_TYPE: nms_gpu
+            NMS_THRESH: 0.01
+            NMS_PRE_MAXSIZE: 4096
+            NMS_POST_MAXSIZE: 500
+
+
+OPTIMIZATION:
+    BATCH_SIZE_PER_GPU: 4
+    NUM_EPOCHS: 80
+    USE_AMP: True                         # context.md section 8: mixed precision throughout
+
+    OPTIMIZER: adam_onecycle
+    LR: 0.003
+    WEIGHT_DECAY: 0.01
+    MOMENTUM: 0.9
+
+    MOMS: [0.95, 0.85]
+    PCT_START: 0.4
+    DIV_FACTOR: 10
+    DECAY_STEP_LIST: [35, 45]
+    LR_DECAY: 0.1
+    LR_CLIP: 0.0000001
+
+    LR_WARMUP: False
+    WARMUP_EPOCH: 1
+
+    GRAD_NORM_CLIP: 10
