@@ -181,10 +181,67 @@ Evidence: `run_logs/2026-11-14_M5_fp32_seed666/` (`MANIFEST.sha256`; container l
 
 ---
 
+## 2026-11-14: M4, the lidar-only ablation (camera off), fp32
+
+**Result: completed, exit 0, no NaN. Single run, single seed.**
+
+Setup: same container, script and recorded deviation as M5, with `cfgs/model1/model1_lidar_only.yaml`
+(`FUSION.USE_CAMERA: False`; same lidar trunk, same head, same augmentation, same schedule and seed 666),
+`USE_AMP: False` set by `sed` in the deployed copy. Started 07:33 local, training ended 09:35 (2 h 02 min,
+about 1.5 min per epoch), everything done 09:59. Best-on-val epoch: **71**. Frames evaluated 1,847 / 946 / 786.
+No reliability report (there is no camera stream, so no `r_lidar` / `r_cam`).
+
+Car 3D AP, R40, IoU 0.5, moderate (easy / moderate / hard in brackets):
+
+| Split | M4 lidar-only | M5 lidar + RGB | M5 minus M4 | Our baseline repro | Paper |
+| --- | --- | --- | --- | --- | --- |
+| Clear | **74.57** (78.65 / 74.57 / 69.49) | 77.70 | +3.1 | 76.59 | 77.05 |
+| Light fog | **70.97** (70.71 / 70.97 / 69.09) | 76.89 | +5.9 | 68.26 | 70.17 |
+| Dense fog | **44.09** (43.39 / 44.09 / 43.82) | 67.85 | **+23.8** | 39.49 | 46.00 |
+
+(The "GATE ... FAIL" the script prints for M4 is the baseline's reproduction band, 75.05-79.05, applied to a
+different model: not meaningful. M4's clear moderate is 2.0 below our baseline reproduction and the
+moderate > easy inversion in both fog splits does appear for M4.)
+
+Calibration (same definition as M5):
+
+| Split | M4 ECE | M5 ECE | M5 minus M4 | M4 D-ECE 0-20 / 20-40 / 40-70.4 m | M4 mean confidence / accuracy |
+| --- | --- | --- | --- | --- | --- |
+| Clear | 0.168 | 0.162 | -0.006 | 0.189 / 0.203 / 0.140 | 0.419 / 0.553 |
+| Light fog | 0.180 | 0.171 | -0.009 | 0.191 / 0.202 / 0.166 | 0.400 / 0.527 |
+| Dense fog | 0.108 | 0.150 | **+0.042** | 0.126 / 0.142 / 0.083 | 0.278 / 0.320 |
+
+How to read this (hedged on purpose):
+
+- **Most of M5's fog gain over the baseline is not the lidar trunk.** The lidar-only model with the same
+  trunk, head, schedule and seed lands near the baseline and the paper in fog (light 70.97, dense 44.09; the
+  paper has 70.17 and 46.00), only +2.7 / +4.6 above our baseline reproduction. Adding the camera stream
+  (and the gating) accounts for the rest in this run: +5.9 in light fog and +23.8 in dense fog. One seed, one
+  run each, fp32 on a new software stack: the size of the effect is large, the exact numbers are not
+  established.
+- **This does not yet show that the reliability gate matters.** M4 versus M5 changes two things at once: a
+  camera stream and the gated fusion. A camera-without-gate ablation (naive fusion, same camera features, no
+  reliability weighting) is needed to separate them. Not run.
+- **No calibration gain to go with the AP gain.** ECE is about the same in clear and light fog (M5 lower by
+  0.006 and 0.009, well inside what one seed can move) and **worse** in dense fog (0.150 against 0.108). Both
+  models are under-confident (mean confidence below accuracy). Per `context.md` section 1, the AP gain in
+  fog is not a thesis win by itself. (The lower dense-fog D-ECE for M4 comes with far fewer, low-score
+  detections: 1,948 against 2,360.)
+- **Not checked:** whether the camera stream is using cues specific to the STF dense-fog split rather than
+  fog robustness in general. The test splits were never used for model selection.
+
+Evidence: `run_logs/2026-11-14_M4_lidar_only_fp32_seed666/` (same contents as the M5 archive, with
+`MANIFEST.sha256`).
+
+---
+
 ## Status after these runs
 
-M3 is complete in the sense of its goals (see above). **M5 is complete as a first run** (one seed, fp32).
-Not done: M4 (lidar-only ablation, needed to attribute the AP gain), the baseline's ECE on the same definition
-(run `eval_calibration.py` on the baseline's `result.pkl`), ECE with two modalities degraded (needs the
-corruption engine), an fp16-safe fix of the auxiliary heads, M6 (writeup). Not yet committed: the Dockerfile
-fixes, the `eval_calibration.py` fix and test, and this entry.
+M3, M4 and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation).
+The Dockerfile fixes, the `eval_calibration.py` fix and the M3/M5 entries are committed on
+`model1/m3-run-setup-and-log` (pushed); this M4 entry is not yet committed.
+
+Not done, in rough order of value: a camera-without-gate ablation (to test the gate itself); the baseline's ECE on
+the same definition (run `eval_calibration.py` on the baseline's `result.pkl`, which lives on the baseline
+machine); ECE with two modalities degraded (needs the corruption engine); more seeds; an fp16-safe fix of the
+auxiliary heads; M6 (writeup).
