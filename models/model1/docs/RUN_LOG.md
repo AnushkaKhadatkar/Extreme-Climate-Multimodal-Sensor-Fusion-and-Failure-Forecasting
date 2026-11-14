@@ -87,8 +87,104 @@ Raw logs: `run_logs/2026-11-13_M3_nan_investigation/logs/` (training logs, the h
 
 ---
 
+## 2026-11-13 to 2026-11-14: M3 follow-up and two more environment fixes
+
+- `m3_fp32_200f_30ep` (200 frames, 30 epochs, `USE_AMP: False` in a scratch copy of the yaml, seed 666):
+  finite throughout, epoch-average loss about 4.8 down to about 3.2, 0 NaN messages.
+- `m3_fp32_full_1ep` (full 3,469 frames, 1 epoch, same setup): **one epoch = 4 min 51 s** of training
+  (868 iterations, about 0.34 s each), loss average 4.82, 0 NaN. GPU memory about 13 GB at batch 4.
+- Both runs then crashed in the evaluation that `train.py` runs after training, exposing two problems in
+  the rebuilt 5090 image, both fixed in `models/model1/docker/Dockerfile` (not in `baseline/docker/`):
+  1. `torch.load` default `weights_only=True` (PyTorch >= 2.6) rejects OpenPCDet checkpoints:
+     `UnpicklingError: Weights only load failed` at `detector3d_template.py:367`. Patched with
+     `weights_only=False` at the 4 call sites (the build asserts the count).
+  2. `nvJitLinkError ERROR_INTERNAL ... may need newer version of nvJitLink library` in the AP scoring
+     (numba-cuda IoU kernels): the image had `nvidia-nvjitlink-cu12` 12.8.61 (torch's pin) next to
+     `nvidia-cuda-nvcc-cu12` 12.9.86, while `baseline/docker/requirements.lock.txt` pins nvjitlink
+     12.9.86. Installed 12.9.86 (`--no-deps`). torch still runs on the GPU afterwards. The same mismatch
+     exists in a fresh build of the baseline image: tell Rohil.
+- After both fixes: single-checkpoint evaluation of the 200-frame model on val (781 frames) completed and
+  printed an AP table (3D AP, moderate, about 28; a 200-frame model, so a pipeline check, not a result).
+- `tools/eval_calibration.py` crashed on real results (`ValueError: all the input arrays must have same
+  number of dimensions`): frames with no detections store `name` as an empty float array, so
+  `name == "Car"` was a scalar. Fixed, with a regression test (6 tests in that file pass).
+- Archive: `run_logs/2026-11-13_M3_nan_investigation/`.
+
+M3 goals met: loss falls over a healthy run, an epoch is timed, and the evaluation path works end to end.
+
+---
+
+## 2026-11-13 to 2026-11-14: M5, the full Model 1 (lidar + RGB), fp32
+
+**Result: completed, exit 0, no NaN anywhere. Single run, single seed.**
+
+Setup: `models/model1/tools/train_and_eval.sh` in `stf-model1:pinned`, config
+`cfgs/model1/model1_lidar_rgb.yaml` with **`USE_AMP: False` set by `sed` in the deployed copy** (the committed
+yaml still says `USE_AMP: True`; a recorded deviation from `context.md` section 8), `--fix_random_seed`
+(666), batch 4, 80 epochs, everything else as committed. Repo HEAD at launch: `5159767` plus uncommitted
+Dockerfile and `eval_calibration.py` fixes (above). Started 2026-11-13 21:22 local; training ended
+03:32 (6 h 10 min); best-on-val over all 80 checkpoints done 04:40; test splits, ECE and reliability done
+04:45. Epoch-average training loss 5.6 (epoch 1) to 2.11 (epoch 80).
+
+Best-on-val epoch (clear val, Car 3D AP R40 IoU 0.5 moderate): **epoch 63**. Test splits are never used to
+choose.
+
+Car 3D AP, R40, IoU 0.5 (frames: 1,847 / 946 / 786, as required):
+
+| Split | Model 1 easy / mod / hard | Our baseline reproduction | Paper (PV-RCNN †, alpha = 0) |
+| --- | --- | --- | --- |
+| Clear | 81.39 / **77.70** / 72.72 | 78.99 / 76.59 / 71.64 | 79.61 / 77.05 / 71.03 |
+| Light fog | 78.61 / **76.89** / 74.31 | 68.07 / 68.26 / 66.49 | 69.55 / 70.17 / 68.44 |
+| Dense fog | 68.13 / **67.85** / 65.58 | 38.23 / 39.49 / 38.75 | 45.03 / 46.00 / 45.08 |
+
+Moderate AP vs our baseline reproduction: clear +1.1, light fog +8.6, dense fog +28.4. (The "GATE PASS"
+line the script prints is the baseline's reproduction gate and means nothing for Model 1.) The paper's
+moderate > easy inversion in fog does not appear for Model 1 (76.89 < 78.61, 67.85 < 68.13).
+
+Calibration (`tools/eval_calibration.py`; Car, every detection with score >= 0.1, correct = TP at 3D IoU
+0.5, 15 equal-width bins):
+
+| Split | ECE | D-ECE 0-20 m | 20-40 m | 40-70.4 m | mean confidence / accuracy |
+| --- | --- | --- | --- | --- | --- |
+| Clear | 0.162 | 0.196 | 0.184 | 0.138 | 0.470 / 0.596 |
+| Light fog | 0.171 | 0.196 | 0.198 | 0.150 | 0.459 / 0.588 |
+| Dense fog | 0.150 | 0.126 | 0.151 | 0.156 | 0.330 / 0.357 |
+
+Reliability (`tools/summarize_reliability.py`, medians per split):
+
+| Split | frames | r_lidar | r_cam | mean camera attention weight |
+| --- | --- | --- | --- | --- |
+| Clear | 1,847 | 0.797 | 0.832 | 0.521 |
+| Light fog | 946 | 0.726 | 0.832 | 0.547 |
+| Dense fog | 786 | 0.420 | 0.832 | 0.627 |
+
+How to read this (hedged on purpose):
+
+- **The AP gain in fog is not yet attributable.** Model 1 differs from the baseline in the lidar trunk
+  (SECOND-style, not PV-RCNN), no `gt_sampling`, an added camera stream, fp32, and a different software
+  stack (RTX 5090, torch 2.7.1 vs the baseline's 4090, torch 2.0.1). Only the lidar-only ablation (M4, same
+  trunk and head, camera off) can say how much is the camera and how much is the trunk. One seed.
+- **Calibration is poor and nothing to compare against yet.** ECE is about 0.15-0.17 on every split, far
+  above the 0.05 target (which is defined with two modalities degraded and is not measured here: that needs
+  the corruption engine). Scores are under-confident on clear and light fog (mean confidence below
+  accuracy). The baseline's ECE has not been measured, so there is no calibration comparison. Per
+  `context.md` section 1, an AP gain without a calibration gain is not progress on the thesis; this is such
+  a case so far.
+- **Reliability moves the way the thesis hopes, with caveats.** The median lidar reliability falls from
+  0.797 (clear) to 0.726 (light fog) to 0.420 (dense fog) in fog never seen in training, and the mean camera
+  attention weight rises from 0.521 to 0.627. The camera reliability does not change (0.832 in all three
+  splits). These are medians of one run; no check yet that the score tracks real degradation per frame.
+
+Evidence: `run_logs/2026-11-14_M5_fp32_seed666/` (`MANIFEST.sha256`; container log, `train.log`,
+`eval_all_val.log` for all 80 epochs, per-split eval logs, ECE json, reliability jsonl, the three
+`result.pkl`, best (63) and last (80) checkpoints, TensorBoard events, the scripts used).
+
+---
+
 ## Status after these runs
 
-M3 is **not** complete. Not yet measured: a clean overfit curve, the gate scores `r_lidar` / `r_cam`
-over a healthy run, a full-data epoch time, GPU memory at batch 4 on the full set. M4 and M5 have not
-been started.
+M3 is complete in the sense of its goals (see above). **M5 is complete as a first run** (one seed, fp32).
+Not done: M4 (lidar-only ablation, needed to attribute the AP gain), the baseline's ECE on the same definition
+(run `eval_calibration.py` on the baseline's `result.pkl`), ECE with two modalities degraded (needs the
+corruption engine), an fp16-safe fix of the auxiliary heads, M6 (writeup). Not yet committed: the Dockerfile
+fixes, the `eval_calibration.py` fix and test, and this entry.

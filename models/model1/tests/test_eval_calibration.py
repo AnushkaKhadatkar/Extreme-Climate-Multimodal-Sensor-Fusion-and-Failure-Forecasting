@@ -30,6 +30,24 @@ def test_dontcare_overlap():
     assert in_dontcare(det, dc).tolist() == [True, False]
 
 
+def test_collect_frame_with_no_detections():
+    """OpenPCDet writes name=np.zeros(0) (float64), boxes (0, 7), bbox (0, 4) for an empty frame.
+    That used to make collect() fail (`name == "Car"` is a scalar for an empty float array)."""
+    gt_infos = [{"point_cloud": {"lidar_idx": "000002"}, "annos": {
+        "name": np.array(["Car"]),
+        "gt_boxes_lidar": np.array([[10, 0, -1, 4, 1.6, 1.5, 0]], dtype=float),
+        "bbox": np.array([[0, 0, 5, 5]], dtype=float)}}]                 # one row per name
+    empty = {"frame_id": "000002", "name": np.zeros(0), "score": np.zeros(0),
+             "boxes_lidar": np.zeros((0, 7)), "bbox": np.zeros((0, 4))}
+    one = {"frame_id": "000002", "name": np.array(["Car"]), "score": np.array([0.8]),
+           "boxes_lidar": np.array([[10, 0, -1, 4, 1.6, 1.5, 0]], dtype=float), "bbox": np.array([[0, 0, 5, 5]], dtype=float)}
+    fake_iou = lambda d, g: np.ones((len(d), len(g)))
+    conf, correct, rng = collect([empty, one, empty], gt_infos, fake_iou)
+    assert conf.tolist() == [0.8] and correct.tolist() == [True] and rng.shape == (1,)
+    conf0, correct0, rng0 = collect([empty], gt_infos, fake_iou)       # only empty frames
+    assert conf0.shape == (0,) and correct0.shape == (0,) and rng0.shape == (0,)
+
+
 def test_collect_end_to_end_with_fake_iou():
     gt_infos = [{"point_cloud": {"lidar_idx": "000001"}, "annos": {
         "name": np.array(["Car", "Pedestrian", "DontCare"]),

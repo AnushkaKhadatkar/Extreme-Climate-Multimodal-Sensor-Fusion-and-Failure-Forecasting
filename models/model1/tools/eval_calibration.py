@@ -81,7 +81,9 @@ def collect(det_annos: list, gt_infos: list, iou_fn) -> tuple[np.ndarray, np.nda
     confs, correct, ranges = [], [], []
     for det in det_annos:
         gt = gt_by_frame[str(det["frame_id"])]
-        car_det = det["name"] == "Car"
+        # A frame with no detections has name = np.zeros(0) (float64): `== "Car"` on that is a
+        # scalar False, not an empty mask, and indexing with it adds an axis (M3 val run, 2026-11-13).
+        car_det = np.asarray(det["name"]).astype(str) == "Car"
         boxes, scores, bbox2d = det["boxes_lidar"][car_det], det["score"][car_det], det["bbox"][car_det]
         n_obj = int((gt["name"] != "DontCare").sum())
         gt_names = gt["name"][:n_obj]
