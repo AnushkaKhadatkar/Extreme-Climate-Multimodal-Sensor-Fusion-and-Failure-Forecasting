@@ -111,6 +111,8 @@ def main() -> int:
     ap.add_argument("--run", action="append", required=True, metavar="LABEL=DIR", help="M4, M5 or M4b = run_logs folder")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--table-out", type=Path, default=None, help="also write the numbers as a markdown table")
+    ap.add_argument("--baseline-ece", type=Path, default=None,
+                    help="folder with ece_baseline_<split>.json (tools/eval_calibration.py on the baseline's result.pkl)")
     args = ap.parse_args()
 
     runs = {}
@@ -120,6 +122,9 @@ def main() -> int:
             raise SystemExit(f"unknown run label {label!r}; use M4, M5 or M4b")
         runs[label] = read_run(Path(path))
     order = [k for k, _, _ in ENTITIES if k == "Baseline" or k in runs]
+    base_ece = None
+    if args.baseline_ece:
+        base_ece = [json.loads((args.baseline_ece / f"ece_baseline_{s}.json").read_text())["overall"]["ece"] for s in SPLITS]
 
     fig, axes = plt.subplots(2, 2, figsize=(12.5, 8.6), facecolor=SURFACE)
     fig.subplots_adjust(left=0.07, right=0.985, top=0.80, bottom=0.115, hspace=0.42, wspace=0.18)
@@ -134,11 +139,14 @@ def main() -> int:
     ax = axes[0, 1]
     style(ax, "Calibration error, ECE (lower is better)", "ECE, Car detections")
     ece_keys = [k for k in order if k != "Baseline"]
-    grouped_bars(ax, [(k, runs[k]["ece"]) for k in ece_keys], ".3f")
+    ece_series = ([("Baseline", base_ece)] if base_ece else []) + [(k, runs[k]["ece"]) for k in ece_keys]
+    grouped_bars(ax, ece_series, ".3f")
     ax.axhline(0.05, color=INK2, linewidth=1.2, linestyle=(0, (4, 3)), zorder=2)
-    ax.text(0.5, 0.054, "target 0.05*", ha="center", va="bottom", fontsize=8, color=INK2)   # in the gap between groups
-    ax.text(0.01, 0.97, "baseline ECE not measured", transform=ax.transAxes, fontsize=8, color=MUTED, va="top")
-    ax.set_ylim(0, 0.24)
+    ax.set_xlim(-0.5, 3.0)                                                   # room at the right for the label
+    ax.text(2.52, 0.054, "target 0.05*", ha="left", va="bottom", fontsize=8, color=INK2)
+    if not base_ece:
+        ax.text(0.01, 0.97, "baseline ECE not measured", transform=ax.transAxes, fontsize=8, color=MUTED, va="top")
+    ax.set_ylim(0, 0.30)
 
     # C: reliability scores (median with 10th-90th percentile)
     ax = axes[1, 0]
@@ -176,21 +184,22 @@ def main() -> int:
              color=INK, va="top")
     fig.text(0.07, 0.935, "Trained on clear weather only; fog splits are never seen in training. One seed per model, fp32 "
              "(mixed precision off), RTX 5090 stack.", fontsize=9.5, color=INK2, va="top")
-    fig.text(0.07, 0.03, "Read with care: higher AP in fog is not a thesis result by itself (calibration is not better); "
-             "the baseline differs from Model 1 in trunk and software stack. ECE and reliability were measured on the\n"
-             "test splits without any sensor corruption. *0.05 is the thesis target for ECE with two sensors degraded; "
-             "that condition is not measured here. Source: run_logs/ (M4, M5" + (", M4b" if "M4b" in runs else "") +
-             "), baseline/README.md.", fontsize=8.5, color=MUTED, va="bottom")
+    fig.text(0.07, 0.03, "Read with care: the baseline differs from Model 1 in trunk, loss and software stack, so differences are "
+             "not all due to the camera or the gate. ECE and reliability were measured on the test splits\n"
+             "without any sensor corruption. *0.05 is the thesis target for ECE with two sensors degraded; that condition "
+             "is not measured here. Source: run_logs/ (M4, M5" + (", M4b" if "M4b" in runs else "") +
+             (", baseline ECE" if base_ece else "") + "), baseline/README.md.", fontsize=8.5, color=MUTED, va="bottom")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=170, facecolor=SURFACE)
     print("wrote", args.out)
 
-    rows = ["| Split | " + " | ".join(f"{NAME[k]} AP" for k in order) + " | " + " | ".join(f"{k} ECE" for k in ece_keys) + " |",
-            "| --- |" + " --- |" * (len(order) + len(ece_keys))]
+    ece_cols = ece_series
+    rows = ["| Split | " + " | ".join(f"{NAME[k]} AP" for k in order) + " | " + " | ".join(f"{k} ECE" for k, _ in ece_cols) + " |",
+            "| --- |" + " --- |" * (len(order) + len(ece_cols))]
     for i, s in enumerate(SPLIT_NAMES):
         ap_cells = [f"{(BASELINE_MODERATE if k == 'Baseline' else runs[k]['ap'])[i]:.2f}" for k in order]
-        ece_cells = [f"{runs[k]['ece'][i]:.3f}" for k in ece_keys]
+        ece_cells = [f"{vals[i]:.3f}" for _, vals in ece_cols]
         rows.append(f"| {s} | " + " | ".join(ap_cells + ece_cells) + " |")
     table = "\n".join(rows)
     print(table)
