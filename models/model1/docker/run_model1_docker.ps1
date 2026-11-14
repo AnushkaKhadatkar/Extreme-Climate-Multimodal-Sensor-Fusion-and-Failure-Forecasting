@@ -40,21 +40,27 @@ New-Item -ItemType Directory -Force $output | Out-Null
 
 function Invoke-Docker { & docker @args; if ($LASTEXITCODE -ne 0) { throw "docker $($args -join ' ') failed ($LASTEXITCODE)" } }
 
+# Probe whether a docker object exists. Windows PowerShell 5.1 turns a native command's
+# stderr into a terminating error under $ErrorActionPreference = "Stop", so a plain
+# "docker volume inspect <missing>" aborted the whole script before $LASTEXITCODE was read.
+function Test-Docker {
+    $old = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { & docker @args *> $null; return ($LASTEXITCODE -eq 0) } finally { $ErrorActionPreference = $old }
+}
+
 # 1. images
-docker image inspect $BaseImage *> $null
-if ($LASTEXITCODE -ne 0) {
+if (-not (Test-Docker image inspect $BaseImage)) {
     Write-Host "=== building $BaseImage from baseline/docker (first time: ~20-30 min) ==="
     Invoke-Docker build -t $BaseImage "$repo\baseline\docker"
 }
-docker image inspect $Image *> $null
-if ($LASTEXITCODE -ne 0) {
+if (-not (Test-Docker image inspect $Image)) {
     Write-Host "=== building $Image ==="
     Invoke-Docker build -t $Image "$repo\models\model1\docker"
 }
 
 # 2. data volume
-docker volume inspect $Volume *> $null
-$fresh = $LASTEXITCODE -ne 0
+$fresh = -not (Test-Docker volume inspect $Volume)
 if ($fresh -or $RefreshData) {
     if (-not (Test-Path "$kitti\training\velodyne")) { throw "$kitti not found -- run the baseline conversion (CLAUDE.md) first" }
     if (-not (Test-Path $images)) { throw "$images not found -- run models/model1/data_prep/01-03 first" }
@@ -81,7 +87,9 @@ $deployCfgs = "mkdir -p /opt/OpenPCDet/tools/cfgs/model1 && " +
               "(cp /workspace/models/model1/configs/model1_*.yaml /opt/OpenPCDet/tools/cfgs/model1/ 2>/dev/null || true)"
 
 # 3. infos (skipped if all five already exist in the volume)
-$haveInfos = docker run --rm -v "${Volume}:/d" $Image bash -c "ls /d/kitti_infos_{train,val,test_clear,test_light_fog,test_dense_fog}.pkl >/dev/null 2>&1 && echo yes"
+# The CUDA base image prints a banner on stdout, so take only the last line: comparing the
+# whole output array made this check fail every time and regenerated the infos on every run.
+$haveInfos = @(docker run --rm -v "${Volume}:/d" $Image bash -c "ls /d/kitti_infos_{train,val,test_clear,test_light_fog,test_dense_fog}.pkl >/dev/null 2>&1 && echo yes") | Select-Object -Last 1
 if ($haveInfos -ne "yes") {
     Write-Host "=== generating infos for $Volume ==="
     Invoke-Docker run --rm @common $Image bash -c "$deployCfgs && python /workspace/baseline/scripts/03_create_infos.py --cfg /workspace/models/model1/configs/stf_multimodal_dataset.yaml --data-path /opt/OpenPCDet/data/kitti_format_mm --workers 8"
