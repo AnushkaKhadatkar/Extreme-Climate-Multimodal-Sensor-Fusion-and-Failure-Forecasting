@@ -27,19 +27,22 @@ Full design and metric definitions: `docs/DESIGN.md`.
 Regenerate with `tools/make_results_figure.py` (reads the archived run logs). Moderate Car 3D AP (R40, IoU 0.5) and
 ECE on the three STF test splits; one seed per model, fp32:
 
-| Split | Baseline (PV-RCNN) AP | M4 lidar-only AP | M5 lidar + RGB AP | M4 ECE | M5 ECE |
-| --- | --- | --- | --- | --- | --- |
-| Clear | 76.59 | 74.57 | 77.70 | 0.168 | 0.162 |
-| Light fog | 68.26 | 70.97 | 76.89 | 0.180 | 0.171 |
-| Dense fog | 39.49 | 44.09 | 67.85 | 0.108 | 0.150 |
+| Split | Baseline (PV-RCNN) AP | M4 lidar-only AP | M5 lidar + RGB AP | Baseline ECE | M4 ECE | M5 ECE |
+| --- | --- | --- | --- | --- | --- | --- |
+| Clear | 76.59 | 74.57 | 77.70 | 0.182 | 0.168 | 0.162 |
+| Light fog | 68.26 | 70.97 | 76.89 | 0.200 | 0.180 | 0.171 |
+| Dense fog | 39.49 | 44.09 | 67.85 | 0.263 | 0.108 | 0.150 |
 
 What this does and does not show (details and caveats in `docs/RUN_LOG.md`):
 
-- With the same trunk, head, schedule and seed, the camera-off model (M4) behaves like the baseline in fog, so most of
-  M5's fog gain comes with the camera stream and gated fusion, not the lidar trunk.
-- It does **not** show that the reliability gate itself matters (M4b, running, tests that), and the AP gain is not a
-  calibration gain: ECE is about 0.15-0.17, far from the 0.05 target (which is defined with two sensors degraded and is
-  not measured yet), and the baseline's ECE has not been measured.
+- **AP:** with the same trunk, head, schedule and seed, the camera-off model (M4) behaves like the baseline in fog, so
+  most of M5's fog gain comes with the camera stream and gated fusion, not the lidar trunk.
+- **Calibration:** both Model 1 variants are better calibrated than the baseline, most of all in dense fog (0.263 down
+  to 0.108-0.150). The baseline is over-confident (dense fog: confidence 0.43 for accuracy 0.16), Model 1 slightly
+  under-confident. But the lidar-only model is as well calibrated as M5, so this comes with the trunk and loss, not the
+  camera or the gate. Every ECE is still far from the 0.05 target, which is defined with two sensors degraded and is
+  not measured yet.
+- It does **not** show that the reliability gate matters (M4b, running, tests that).
 - The lidar reliability score falls in fog the model never saw (median 0.80 to 0.42), but the camera reliability
   estimator is effectively constant (0.83), so it is not tracking camera health.
 

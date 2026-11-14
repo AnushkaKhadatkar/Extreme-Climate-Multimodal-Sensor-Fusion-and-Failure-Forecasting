@@ -242,13 +242,51 @@ Evidence: `run_logs/2026-11-14_M4_lidar_only_fp32_seed666/` (same contents as th
 
 ---
 
+## 2026-11-14: the baseline's ECE, measured for the first time
+
+The baseline's three test-split `result.pkl` files (PV-RCNN, alpha = 0, evaluated 2026-10-28) were shared on
+Google Drive. They are the baseline's: the 3D AP in their eval logs equals `baseline/README.md` on every split
+(78.99 / 76.59 / 71.64, 68.07 / 68.26 / 66.49, 38.23 / 39.49 / 38.75) and the frame counts are 1,847 / 946 / 786.
+ECE and D-ECE computed with the same tool, the same definition and the same ground truth (`kitti_infos_<split>.pkl`
+from the `stf_kitti_mm` volume) as the Model 1 runs.
+
+| Split | Baseline ECE | M4 ECE | M5 ECE | Baseline D-ECE 0-20 / 20-40 / 40-70.4 m | Baseline mean confidence / accuracy |
+| --- | --- | --- | --- | --- | --- |
+| Clear | 0.182 | 0.168 | 0.162 | 0.069 / 0.147 / 0.221 | 0.558 / 0.385 |
+| Light fog | 0.200 | 0.180 | 0.171 | 0.100 / 0.173 / 0.237 | 0.503 / 0.309 |
+| Dense fog | 0.263 | 0.108 | 0.150 | 0.204 / 0.268 / 0.280 | 0.426 / 0.163 |
+
+(Detections kept: 11,930 / 5,728 / 3,984 for the baseline against 7,587 / 3,104 / 2,360 for M5.)
+
+How to read this (hedged on purpose):
+
+- **Model 1 (both M4 and M5) is better calibrated than the baseline, most of all in dense fog**: M5 is 0.020 lower in
+  clear weather, 0.029 lower in light fog and 0.113 lower in dense fog; M4 is 0.155 lower in dense fog. This corrects
+  what the M4 and M5 entries said (they had no baseline ECE to compare with).
+- **The baseline is over-confident and gets worse in fog**: its mean confidence is far above its accuracy, 0.558
+  against 0.385 in clear weather and 0.426 against 0.163 in dense fog (confidence about 2.6 times accuracy): the
+  "confidently wrong" behaviour the project is about. Model 1 errs the other way (mean confidence below accuracy,
+  slightly under-confident). The baseline is well calibrated at close range in clear weather (D-ECE 0.069 at 0-20 m)
+  and bad far away, where weather bites.
+- **The calibration gain is not from the camera.** The lidar-only M4 is as well calibrated as M5 (clear, light fog)
+  or better (dense fog: 0.108 against 0.150), so the improvement over the baseline comes with the different trunk,
+  head and loss, not with the camera stream or the gate. Cross-detector ECE comparisons are also affected by how many
+  low-score detections each detector emits, so treat the size of the gap with care. One seed per model.
+- **Still far from the thesis target.** Every ECE here is 0.11-0.26, against a target of 0.05 that is defined with
+  two sensors degraded, which is not measured (needs the corruption engine).
+
+Evidence: `run_logs/2026-11-14_baseline_ece/` (`PROVENANCE.txt` with the Drive links, the three `result.pkl` and logs,
+the ECE json, `MANIFEST.sha256`).
+
+---
+
 ## Status after these runs
 
-M3, M4 and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation).
-The Dockerfile fixes, the `eval_calibration.py` fix and the M3/M5 entries are committed on
-`model1/m3-run-setup-and-log` (pushed); this M4 entry is not yet committed.
+M3, M4 and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation), the
+baseline's ECE is measured, and all of the above is committed on `model1/m3-run-setup-and-log` (pushed) except the
+baseline-ECE entry and the M4b run, which is in progress (camera without gate, started 2026-11-14 10:33).
 
-Not done, in rough order of value: a camera-without-gate ablation (to test the gate itself); the baseline's ECE on
-the same definition (run `eval_calibration.py` on the baseline's `result.pkl`, which lives on the baseline
-machine); ECE with two modalities degraded (needs the corruption engine); more seeds; an fp16-safe fix of the
-auxiliary heads; M6 (writeup).
+Not done, in rough order of value: the M4b result (does the gate do anything beyond the camera?); ECE with two
+modalities degraded (needs the corruption engine) and the other thesis metrics (lead time, worst-decile AP, recovery
+time); more seeds; an fp16-safe fix of the auxiliary heads; a fix for the constant camera reliability estimator; M6
+(writeup).

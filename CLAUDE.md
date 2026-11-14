@@ -74,10 +74,12 @@ _Last updated: 2026-11-13_
 
 - **Model 1 (Sarvesh and Anushka):** trained and evaluated on the 5090 (fp32; the committed `USE_AMP: True` goes NaN).
   M4 (lidar-only) and M5 (lidar + RGB, gated), one seed each: moderate AP 74.57 / 70.97 / 44.09 and 77.70 / 76.89 / 67.85
-  (clear / light / dense fog; baseline 76.59 / 68.26 / 39.49); ECE about 0.15-0.17, not better than lidar-only. The fog gain
-  comes with the camera, not the trunk; the gate itself is untested (M4b, camera without gate, is running). The camera
+  (clear / light / dense fog; baseline 76.59 / 68.26 / 39.49). Baseline ECE now measured (0.182 / 0.200 / 0.263,
+  over-confident); Model 1 is better calibrated (M4 0.168 / 0.180 / 0.108, M5 0.162 / 0.171 / 0.150) but the lidar-only
+  model is as good, so it is not the camera or the gate; all still far from the 0.05 target. The AP gain in fog comes
+  with the camera, not the trunk; the gate itself is untested (M4b, camera without gate, is running). The camera
   reliability estimator is constant. Results, caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
-  `models/model1/docs/figures/model1_results_overview.png`. Baseline ECE not yet measured; corruption engine not built.
+  `models/model1/docs/figures/model1_results_overview.png`. Corruption engine not built.
 
 - Both branches are merged into `main`. All D and R tasks are done except D6 (Phase 2 prep).
 - Docker image `stf-openpcdet:pinned` is built on Dipin's machine, and data volume
