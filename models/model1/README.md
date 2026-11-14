@@ -14,10 +14,34 @@ Full design and metric definitions: `docs/DESIGN.md`.
 | M1 | Camera data: extract, demosaic, rectify and tone-map left-camera images for all 7,829 split frames; verify | done (`sarvesh/model1-data`): 7,829/7,829 images; alignment median (0, 0) px; all checks pass |
 | M2 | Docker image, dataset config, model code, tools, tests | done, merged (`model1/integrate`). Re-verified 2026-11-13 on an RTX 5090: image rebuilt for sm_120, 20 / 20 tests pass |
 | M1b | Real images rebuilt on the 5090 box from the raw `cam_stereo_left` archive; Docker volume and infos built | done 2026-11-13: 7,829 / 7,829 PNGs, `03_verify_images.py` ALL CHECKS PASSED, median shift (0, 0) px (`docs/RUN_LOG.md`) |
-| M3 | 200-frame slice: overfit test + epoch timing | **in progress, not complete.** Loss goes NaN under the committed config (`USE_AMP: True`); finite with `USE_AMP: False`. Fix not applied yet (`docs/RUN_LOG.md`) |
-| M4 | Lidar-only ablation, full training | todo |
-| M5 | Full Model 1: train, best-on-val, three test splits; AP + ECE + D-ECE + reliability | todo |
+| M3 | 200-frame slice: overfit test + epoch timing | done 2026-11-13. The committed config (`USE_AMP: True`) goes NaN; with `USE_AMP: False` training is finite. One epoch = 4 min 51 s. fp16-safe fix not applied: M4/M5 ran in fp32, a recorded deviation (`docs/RUN_LOG.md`) |
+| M4 | Lidar-only ablation, full training | done 2026-11-14 (one seed, fp32): moderate AP 74.57 / 70.97 / 44.09 (clear / light / dense fog) |
+| M5 | Full Model 1: train, best-on-val, three test splits; AP + ECE + D-ECE + reliability | done 2026-11-14 as a first run (one seed, fp32): 77.70 / 76.89 / 67.85; ECE 0.162 / 0.171 / 0.150 |
+| M4b | Ablation: camera without the reliability gate (`configs/model1_lidar_rgb_nogate.yaml`) | **running** (started 2026-11-14 10:33; about 7 h by estimate) |
 | M6 | Writeup against the baseline | todo, after the baseline gate passes |
+
+## Results so far
+
+![Model 1 results overview](docs/figures/model1_results_overview.png)
+
+Regenerate with `tools/make_results_figure.py` (reads the archived run logs). Moderate Car 3D AP (R40, IoU 0.5) and
+ECE on the three STF test splits; one seed per model, fp32:
+
+| Split | Baseline (PV-RCNN) AP | M4 lidar-only AP | M5 lidar + RGB AP | M4 ECE | M5 ECE |
+| --- | --- | --- | --- | --- | --- |
+| Clear | 76.59 | 74.57 | 77.70 | 0.168 | 0.162 |
+| Light fog | 68.26 | 70.97 | 76.89 | 0.180 | 0.171 |
+| Dense fog | 39.49 | 44.09 | 67.85 | 0.108 | 0.150 |
+
+What this does and does not show (details and caveats in `docs/RUN_LOG.md`):
+
+- With the same trunk, head, schedule and seed, the camera-off model (M4) behaves like the baseline in fog, so most of
+  M5's fog gain comes with the camera stream and gated fusion, not the lidar trunk.
+- It does **not** show that the reliability gate itself matters (M4b, running, tests that), and the AP gain is not a
+  calibration gain: ECE is about 0.15-0.17, far from the 0.05 target (which is defined with two sensors degraded and is
+  not measured yet), and the baseline's ECE has not been measured.
+- The lidar reliability score falls in fog the model never saw (median 0.80 to 0.42), but the camera reliability
+  estimator is effectively constant (0.83), so it is not tracking camera health.
 
 ## Data
 

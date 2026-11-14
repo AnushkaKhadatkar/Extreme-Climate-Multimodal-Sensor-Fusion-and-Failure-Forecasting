@@ -170,10 +170,17 @@ How to read this (hedged on purpose):
   accuracy). The baseline's ECE has not been measured, so there is no calibration comparison. Per
   `context.md` section 1, an AP gain without a calibration gain is not progress on the thesis; this is such
   a case so far.
-- **Reliability moves the way the thesis hopes, with caveats.** The median lidar reliability falls from
-  0.797 (clear) to 0.726 (light fog) to 0.420 (dense fog) in fog never seen in training, and the mean camera
-  attention weight rises from 0.521 to 0.627. The camera reliability does not change (0.832 in all three
-  splits). These are medians of one run; no check yet that the score tracks real degradation per frame.
+- **Reliability: the lidar side moves the way the thesis hopes; the camera side does not work.** The median
+  lidar reliability falls from 0.797 (clear) to 0.726 (light fog) to 0.420 (dense fog) in fog never seen in
+  training, with a wide spread (std 0.18 / 0.26 / 0.29; in dense fog the 10th-90th percentile range is roughly
+  0.01 to 0.78 and some frames are at 0), and the mean camera attention weight rises from 0.521 to 0.627.
+  **The camera reliability estimator is effectively constant**: its median equals its maximum, 0.8323, in all
+  three splits (std 0.010 / 0.004 / 0.028; only 11 / 5 / 31 distinct values over 1,847 / 946 / 786 frames),
+  so it is not tracking camera health per frame. This is the gate collapse that `DESIGN.md` section 7 says to
+  watch for, on the camera side. Any gating effect in M5 therefore comes through `r_lidar` (and the learned
+  attention), not through a per-frame trust in the camera. (An earlier version of this entry said only that the
+  camera score "does not change"; the per-frame statistics above are the accurate statement.) One run; no
+  check yet that `r_lidar` tracks real degradation per frame.
 
 Evidence: `run_logs/2026-11-14_M5_fp32_seed666/` (`MANIFEST.sha256`; container log, `train.log`,
 `eval_all_val.log` for all 80 epochs, per-split eval logs, ECE json, reliability jsonl, the three
