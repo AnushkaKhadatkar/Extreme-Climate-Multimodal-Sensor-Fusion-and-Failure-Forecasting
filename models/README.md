@@ -6,7 +6,7 @@ reported as a fifth, separate system (`context.md` §10).
 
 | Folder | Model | Status |
 | --- | --- | --- |
-| `model1/` | Reliability-gated multimodal transformer (lidar + left RGB) | Scaffold only (M0). Design in `model1/docs/DESIGN.md`. |
+| `model1/` | Reliability-gated multimodal transformer (lidar + left RGB) | Code, data pipeline and tests done (M0-M2). Not yet trained: the 200-frame trial (M3) is in progress. Design in `model1/docs/DESIGN.md`, runs in `model1/docs/RUN_LOG.md`. |
 | `model2/` | Product-of-experts probabilistic fusion | Not started |
 | `model3/` | Physics-informed degradation forecaster | Not started |
 | `model4/` | Self-supervised test-time adaptation | Not started |

@@ -35,6 +35,17 @@ whenever a task lands, a branch merges, or a run starts or finishes.**
 - Converted data: `baseline/data/kitti_format/` (gitignored, ~21 GB, placeholder images)
 - Training runs in Docker (`baseline/docker/`), with GPU passthrough confirmed working.
 
+## Machine notes (Anushka's Windows box: RTX 5090, Docker Desktop)
+
+- git is not installed system-wide: portable MinGit at `%LOCALAPPDATA%\MinGit\cmd\git.exe`.
+- Python: standalone 3.12 at `%LOCALAPPDATA%\Python312\python.exe` (stdlib + `gdown`; no numpy/opencv: run the
+  image-building scripts inside the Docker image).
+- **Blackwell (sm_120): the Drive tar `stf-openpcdet-pinned.tar` does not run here** (torch 2.0.1 / CUDA 11.8, built on a
+  4090). Build from `baseline/docker/Dockerfile` (CUDA 12.8, torch 2.7.1). The baseline numbers came from the 4090 image.
+- `run_model1_docker.ps1` is run with Windows PowerShell 5.1 here (fixed to work under it).
+- Data lives outside git under the repo's `data/` and `baseline/data/` (both gitignored). Logs of runs go to
+  `run_logs/` next to the repo checkout; see `models/model1/README.md` ("Keep the logs").
+
 ## Rebuilding `baseline/data/kitti_format/` on another machine (~21 GB)
 
 It is gitignored, so each machine builds its own from the raw data. The output is
@@ -59,7 +70,12 @@ complete camera archive. `baseline/data/kitti_source/` can be deleted afterwards
 
 ## Current state (update this)
 
-_Last updated: 2026-10-28_
+_Last updated: 2026-11-13_
+
+- **Model 1 (Sarvesh and Anushka):** code, data pipeline and 20 tests are merged and pass on the 5090. Real camera
+  images rebuilt (7,829, verified). M3 (200-frame trial) is **in progress**: the loss goes NaN with the committed
+  `USE_AMP: True`, and is finite with `USE_AMP: False`. Details and raw-log locations: `models/model1/docs/RUN_LOG.md`.
+  Not yet trained on the full set; no Model 1 result exists yet.
 
 - Both branches are merged into `main`. All D and R tasks are done except D6 (Phase 2 prep).
 - Docker image `stf-openpcdet:pinned` is built on Dipin's machine, and data volume
