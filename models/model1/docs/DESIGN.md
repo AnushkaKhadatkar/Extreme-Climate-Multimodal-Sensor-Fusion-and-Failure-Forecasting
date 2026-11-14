@@ -91,7 +91,14 @@ functions.
    bottom z = −1.78 m) on the fused map (projected back to 512 channels).
    Sigmoid scores are the confidences used for ECE.
 
-`FUSION.USE_CAMERA: False` skips 2–5: the lidar-only ablation.
+`FUSION.USE_CAMERA: False` skips 2–5: the lidar-only ablation (M4).
+
+`FUSION.GATE_ENABLED: False` (default True) is the camera-without-gate ablation (M4b,
+`configs/model1_lidar_rgb_nogate.yaml`): the reliability scores are still estimated, trained and logged, but enter
+the attention bias as r = 1 (invalid-pixel masking stays). Everything else, including the auxiliary heads,
+the reliability loss and modality dropout, is unchanged, so M4 -> M4b isolates the camera and M4b -> M5 isolates the
+gate. Tested in `tests/test_model_forward.py` (with the gate off the camera attention weight does not depend on r;
+with it on, it does).
 
 ## 4. Training the gate without weather data (protocol decision)
 

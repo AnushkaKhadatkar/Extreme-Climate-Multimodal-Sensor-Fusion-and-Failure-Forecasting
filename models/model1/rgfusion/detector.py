@@ -36,6 +36,10 @@ class Model1Fusion(Detector3DTemplate):
 
         f = model_cfg.FUSION
         self.use_camera = bool(f.USE_CAMERA)
+        # FUSION.GATE_ENABLED False (default True) is the "camera without gate" ablation (M4b): the
+        # reliability scores are still estimated, trained and logged, but they no longer shift the
+        # attention logits (r = 1 in the bias). Invalid-pixel masking stays: it is not a reliability.
+        self.gate_enabled = bool(f.get("GATE_ENABLED", True))
         if not self.use_camera:
             return
 
@@ -102,7 +106,7 @@ class Model1Fusion(Detector3DTemplate):
         tokens = torch.stack([t_lidar, t_cam], dim=-1)                            # (B, D, H, W, 2)
         tokens = tokens.flatten(2, 3).permute(0, 2, 3, 1)                         # (B, HW, 2, D)
         valid = torch.stack([torch.ones_like(cam_valid), cam_valid], dim=-1).flatten(1, 2)  # (B, HW, 2)
-        bias = stream_bias(r.detach(), valid)
+        bias = stream_bias(r.detach() if self.gate_enabled else torch.ones_like(r), valid)
         fused, weights = self.fusion(tokens, bias, self.pos_xy)
         fused = fused.permute(0, 2, 1).reshape(B, -1, H, W)
         batch_dict["spatial_features_2d"] = self.fused_to_bev(fused)

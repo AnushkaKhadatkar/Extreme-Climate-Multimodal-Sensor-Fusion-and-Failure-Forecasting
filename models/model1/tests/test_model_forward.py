@@ -63,7 +63,7 @@ def build(cfg_name, training):
     return ds, model
 
 
-@pytest.mark.parametrize("cfg_name", ["model1_lidar_rgb.yaml", "model1_lidar_only.yaml"])
+@pytest.mark.parametrize("cfg_name", ["model1_lidar_rgb.yaml", "model1_lidar_only.yaml", "model1_lidar_rgb_nogate.yaml"])
 def test_train_step_and_inference(cfg_name):
     torch.manual_seed(0)
     rng = np.random.default_rng(0)
@@ -75,7 +75,7 @@ def test_train_step_and_inference(cfg_name):
         ret, tb, _ = model(batch)
     assert torch.isfinite(ret["loss"]), tb
     ret["loss"].backward()
-    if cfg_name == "model1_lidar_rgb.yaml":
+    if cfg_name != "model1_lidar_only.yaml":
         for k in ("m1_aux_lidar", "m1_aux_cam", "m1_rel_loss", "m1_r_lidar", "m1_r_cam"):
             assert np.isfinite(tb[k]), k
         assert model.fusion.query.grad is not None
@@ -88,3 +88,39 @@ def test_train_step_and_inference(cfg_name):
     with torch.no_grad():
         preds, _ = model(batch)
     assert len(preds) == 2 and "pred_scores" in preds[0]
+
+
+class _ConstLogit(torch.nn.Module):
+    """Stands in for the camera reliability estimator and returns a fixed logit for every frame."""
+
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def forward(self, feats, stats):
+        return torch.full((feats.shape[0],), self.value, device=feats.device)
+
+
+@pytest.mark.parametrize("cfg_name,gate_on", [("model1_lidar_rgb.yaml", True), ("model1_lidar_rgb_nogate.yaml", False)])
+def test_gate_switch_controls_whether_reliability_reaches_attention(cfg_name, gate_on):
+    """M4b: with GATE_ENABLED False the camera attention weight must not depend on r; with it on, it must."""
+    torch.manual_seed(0)
+    rng = np.random.default_rng(0)
+    ds, model = build(cfg_name, training=False)
+    model.eval()
+    assert model.gate_enabled is gate_on
+    batch_cpu = ds.collate_batch([ds.sample(i, rng) for i in range(2)])
+
+    def camera_weight(logit):
+        model.rel_cam = _ConstLogit(logit).cuda()
+        batch = {k: (v.clone() if torch.is_tensor(v) else v) for k, v in batch_cpu.items()}
+        load_data_to_gpu(batch)
+        with torch.no_grad():
+            model(batch)
+        return float(model.m1["cam_weight"].mean())
+
+    w_unreliable, w_reliable = camera_weight(-9.0), camera_weight(9.0)       # r about 1e-4 vs about 1
+    if gate_on:
+        assert w_reliable - w_unreliable > 0.05, (w_unreliable, w_reliable)  # a distrusted camera is attended less
+    else:
+        assert abs(w_reliable - w_unreliable) < 1e-6, (w_unreliable, w_reliable)
