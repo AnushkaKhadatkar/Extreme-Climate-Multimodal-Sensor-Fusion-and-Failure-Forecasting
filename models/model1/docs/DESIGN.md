@@ -128,6 +128,18 @@ signals.
 If it turns out to need weather-shaped perturbations to work, that is a finding
 to report, not a silent change.
 
+**Variant with photometric camera dropout (M5p / M4bp), a recorded deviation.** The sensor-failure probes found that
+the camera reliability score reacts to a dead or occluded camera (what the dropout above produces) but not to a
+darkened or blurred one, so a gate cannot protect against those. The `*_photo` configs add two generic camera modes
+to the dropout, `dark` (brightness x 0.03-0.5) and `blur` (Gaussian sigma 3-30 px), with `keep_cam` left at 1 so the
+reliability target still comes from the camera head's own loss on that frame and never from a corruption label. They
+are generic photometric degradations, not simulations of fog, snow or icing, but a heavy blur is lens-fog-like, which is
+why this is recorded as a deviation and kept as a separate variant: the main M5 results stay as they are. To keep the
+comparison honest, evaluation includes failure families that are never trained on (`cam_haze`, `cam_motion_blur`,
+`cam_color_cast` in `tools/eval_corruptions.py`), and M5p (gate, floor 0.1) is compared with M4bp (no gate, same
+dropout) so an effect of the augmentation alone is not credited to the gate. Scores on the in-family failures (dark,
+isotropic blur) are partly teaching to the test and are reported as such.
+
 ## 5. Metrics
 
 Definitions are fixed here before any number is produced and apply identically

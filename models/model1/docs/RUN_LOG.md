@@ -468,6 +468,36 @@ Evidence: `run_logs/2026-11-14_gate_floor_probe_v2/` (24 evaluation logs, ECE js
 
 ---
 
+## 2026-11-14: M5p and M4bp launched (photometric camera dropout): plan written down BEFORE any result
+
+Question: can the camera reliability score be made to notice darkness and blur, and does that get better scores under
+camera failures without hurting anything else? Two runs side by side on the one GPU (about 9.6 h each, started 19:50
+local, fp32, seed 666, 80 epochs, same recipe as M5 and M4b):
+
+- **M5p** = `configs/model1_lidar_rgb_photo.yaml`: lidar + RGB with the gate, gate floor 0.1, and the dropout gains
+  `dark` and `blur` camera modes.
+- **M4bp** = `configs/model1_lidar_rgb_nogate_photo.yaml`: the control, same photometric dropout, no gate. M5p against
+  M4bp isolates the gate; each against M5 / M4b isolates the augmentation.
+
+This is a protocol deviation (`DESIGN.md` section 4): generic photometric dropout, `keep_cam` stays 1 (no corruption
+label reaches the reliability target), but a heavy blur is lens-fog-like. Separate variant; the main M5 stays as is.
+Implementation: `rgfusion/modality_dropout.py` (opt-in modes, default unchanged), 53 tests pass; a real STF frame was
+checked visually and the blur costs about 134 ms per frame but applies to only about 5% of samples.
+
+**Evaluation plan (fixed now):**
+1. Probe v3 on clear val (781 frames) with the injected failures: the seven used before plus three HELD-OUT camera
+   failures never trained on (`cam_haze`, `cam_motion_blur`, `cam_color_cast`), comparing M4b, M5, M4bp, M5p (and
+   lidar-only M4 for lidar failures). Primary comparison: the held-out failures. `cam_dark` and `cam_blur` are now
+   in-family for M5p/M4bp, so gains there are partly teaching to the test and are reported as such.
+2. The usual three test splits (clear, light fog, dense fog) with AP, ECE, D-ECE and reliability, to check there is
+   no regression in real fog.
+3. What would count as evidence for each claim: (a) r_cam falls for the in-family dark and blur frames; (b) r_cam
+   falls, and AP drops less than for the no-gate control, under at least one held-out failure; (c) M5p beats M4bp
+   (a gate effect) by clearly more than the roughly 3 AP between-model noise seen before; (d) real-fog AP and ECE
+   within that noise of M5 / M4b. Anything smaller than about 3 AP is not evidence. One seed each.
+
+---
+
 ## Status after these runs
 
 M3, M4, M4b and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation), the
