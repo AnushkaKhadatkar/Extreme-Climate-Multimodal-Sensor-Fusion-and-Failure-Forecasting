@@ -344,13 +344,91 @@ Evidence: `run_logs/2026-11-14_M4b_nogate_fp32_seed666/` (same contents as the M
 
 ---
 
+## 2026-11-14: sensor-failure probe v1 (exploratory): does the camera score react, and does the gate help when a sensor fails?
+
+Why: in fog the camera score sat at 0.83 and the gate added nothing, but fog does not break the camera, so it could
+not show whether the camera score works or whether a gate helps. This probe injects synthetic failures at evaluation
+time (`tools/eval_corruptions.py`, through the `M1_EVAL_CORRUPTION` hook; 18 CPU tests) and re-evaluates the three
+trained models' best checkpoints (M4 epoch 71, M4b 72, M5 63) with no retraining (`tools/run_corruption_probe.sh`,
+`tools/summarize_corruption_probe.py`). **Clear val split (781 frames), not the test splits, so the test splits were not
+used to explore; synthetic failures, not physical fog/icing; one seed per model.** The failures: `cam_zeros` (black
+image), `cam_occlusion` (60% grey patch), `cam_dark` (brightness x 0.1), `cam_blur` (Gaussian sigma 25 px),
+`lidar_sparse` (5% of points), `lidar_sector` (60% azimuth sector removed), `both_dark_sparse`. zeros/occlusion/sparse/
+sector are the same kind of perturbation as the training-time dropout; dark and blur were never seen in training.
+
+Moderate Car 3D AP and ECE (- = a camera failure cannot change the lidar-only M4):
+
+| Condition | M4 AP | M4b AP | M5 AP | M4 ECE | M4b ECE | M5 ECE |
+| --- | --- | --- | --- | --- | --- | --- |
+| clean | 75.47 | 75.45 | 75.84 | 0.184 | 0.155 | 0.166 |
+| cam_zeros | - | 75.06 | 75.05 | - | 0.165 | 0.164 |
+| cam_occlusion | - | 74.78 | 75.50 | - | 0.166 | 0.169 |
+| cam_dark | - | 70.31 | 73.09 | - | 0.190 | 0.199 |
+| cam_blur | - | 47.37 | 44.22 | - | 0.126 | 0.197 |
+| lidar_sparse | 16.80 | 44.63 | 39.97 | 0.159 | 0.126 | 0.128 |
+| lidar_sector | 21.21 | 30.96 | 30.79 | 0.147 | 0.122 | 0.114 |
+| both_dark_sparse | - | 40.72 | 35.78 | - | 0.123 | 0.124 |
+
+What the reliability estimators believe (median r_lidar / median r_cam / mean camera attention weight; in M4b r does
+not drive attention):
+
+| Condition | M4b r_lidar | M4b r_cam | M4b cam weight | M5 r_lidar | M5 r_cam | M5 cam weight |
+| --- | --- | --- | --- | --- | --- | --- |
+| clean | 0.818 | 0.837 | 0.484 | 0.797 | 0.832 | 0.509 |
+| cam_zeros | 0.818 | 0.014 | 0.142 | 0.797 | 0.000 | 0.012 |
+| cam_occlusion | 0.818 | 0.106 | 0.241 | 0.797 | 0.124 | 0.143 |
+| cam_dark | 0.818 | 0.837 | 0.460 | 0.797 | 0.832 | 0.495 |
+| cam_blur | 0.818 | 0.837 | 0.433 | 0.797 | 0.832 | 0.419 |
+| lidar_sparse | 0.061 | 0.837 | 0.628 | 0.000 | 0.832 | 0.890 |
+| lidar_sector | 0.230 | 0.837 | 0.635 | 0.553 | 0.832 | 0.636 |
+| both_dark_sparse | 0.061 | 0.837 | 0.603 | 0.000 | 0.832 | 0.888 |
+
+How to read this (hedged on purpose):
+
+- **This corrects the earlier statement that the camera reliability estimator is "constant / collapsed".** It sits at
+  its clean-image ceiling (about 0.84), as the target construction implies (a normal image has an expected target of
+  about 0.84), and it **does react** to the failures it was trained on: r_cam falls to about 0.0 for a dead camera and
+  about 0.1 for a 60% occlusion. It is **blind** to a darkened or blurred camera (r_cam unchanged at 0.83-0.84), which
+  are degradations it never saw, and real STF fog does not move it either. So in fog it could not have acted, and
+  under dark or blur it cannot act.
+- **The lidar estimator works for lidar failures**: r_lidar falls to 0.06 (M4b) / 0.00 (M5) for a 5%-sparse lidar and to
+  0.23 / 0.55 for a removed sector, as it did in dense fog (0.43).
+- **The camera rescues a failed lidar, which is the point of fusion**: with 5% of the lidar points the lidar-only M4
+  collapses to 16.8 AP, while M4b and M5 hold 44.6 and 40.0; with a 60% sector gone, 21.2 against 31.0 and 30.8.
+- **No advantage of the gate, and possibly a cost.** A dead or occluded camera costs M4b and M5 about the same (75.1
+  and 75.1; 74.8 and 75.5). For a failed lidar the gate correctly drives r_lidar to about 0 and pushes the camera
+  attention to 0.89, but M5 scores lower than M4b (39.97 against 44.63; with both sensors degraded 35.78 against
+  40.72): setting r to about 0 excludes the lidar stream entirely (bias log 1e-4), although a 5%-sparse lidar still
+  carries information that the ungated model uses. Cautions: these gaps (4.7 and 4.9 AP) are the size of the
+  between-model variation seen elsewhere (the dark camera gives M5 +2.8 AP although r_cam does not move, so that gain
+  is not a gate effect), so with one seed each this is **no evidence the gate helps and weak evidence it hurts**, not
+  a measured harm.
+- **Neither model is protected from a silent camera failure.** A blurred camera drops AP from 75 to 47 (M4b) and 44
+  (M5), and r_cam does not notice: the "confidently wrong, silent about it" case the thesis targets, not solved by
+  this gate. ECE does not rise there (0.126 and 0.197), so the failure is not visible in ECE either.
+- **Calibration under failure** is similar with and without the gate (differences of 0.001 to 0.03, both directions),
+  and nowhere near 0.05.
+- **Implications to decide (protocol):** the camera estimator was trained only on generic dropout (zeros, noise,
+  mask). Making it notice darkness or blur would mean adding such degradations to training; DESIGN.md section 4 says
+  that needing shaped perturbations is a finding to report, not a silent change. A softer floor on r (so a distrusted
+  stream is down-weighted and not removed) is a separate, cheap thing to try. Neither is done.
+
+Evidence: `run_logs/2026-11-14_sensor_failure_probe_v1/` (probe logs, ECE json, reliability jsonl, `summary.md`,
+`MANIFEST.sha256`).
+
+---
+
 ## Status after these runs
 
-M3, M4, M4b and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation) and
-the baseline's ECE is measured. The ablation chain M4 (no camera) -> M4b (camera, no gate) -> M5 (camera + gate) says,
-for this setup: the camera accounts for the fog gain, the gate adds nothing measurable. Everything up to the baseline
-ECE entry is committed on `model1/m3-run-setup-and-log` (pushed); the M4b entry above is not yet committed.
+M3, M4, M4b and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation), the
+baseline's ECE is measured, and a first sensor-failure probe has been run. The ablation chain M4 (no camera) -> M4b
+(camera, no gate) -> M5 (camera + gate) says, for this setup: the camera accounts for the fog gain, the gate adds
+nothing measurable in fog or under single-sensor failures. Everything up to the M4b entry is committed on
+`model1/m3-run-setup-and-log` (pushed); the probe and its tools are committed in the next push.
 
-Not done, in rough order of value: fix the constant camera reliability estimator; the corruption engine (the fair
-test of any gate, and the only way to measure ECE with two modalities degraded and the other thesis metrics: lead
-time, worst-decile AP, recovery time); more seeds; an fp16-safe fix of the auxiliary heads; M6 (writeup).
+Not done, in rough order of value: decide whether the camera reliability estimator should be trained on darkness/blur
+(a protocol decision) and try a softer floor on r; the corruption engine proper (physical fog, snow, icing,
+occlusion, calibration drift, dropout; evaluated on the test splits), which is the only way to measure ECE with two
+modalities degraded and the other thesis metrics (lead time, worst-decile AP, recovery time); more seeds (the
+between-model variation is of the order of 3 AP in the corrupted regime); an fp16-safe fix of the auxiliary heads; M6
+(writeup).

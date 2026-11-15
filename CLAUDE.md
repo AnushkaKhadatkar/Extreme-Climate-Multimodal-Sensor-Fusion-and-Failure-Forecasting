@@ -78,8 +78,10 @@ _Last updated: 2026-11-13_
   over-confident); Model 1 is better calibrated (M4 0.168 / 0.180 / 0.108, M5 0.162 / 0.171 / 0.150) but the lidar-only
   model is as good, so it is not the camera or the gate; all still far from the 0.05 target. The AP gain in fog comes
   with the camera, not the trunk, and **not from the gate**: M4b (camera, no gate) scores 77.55 / 76.32 / 68.29, ECE
-  0.153 / 0.159 / 0.137, the same AP as M5 and slightly better calibrated. The camera reliability estimator is constant
-  (collapsed); a gate can only be tested fairly with injected sensor failures (corruption engine, not built). Results, caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
+  0.153 / 0.159 / 0.137, the same AP as M5 and slightly better calibrated. A first sensor-failure probe (synthetic, clear
+  val, one seed; `tools/eval_corruptions.py`, RUN_LOG) found the lidar reliability score reacts to lidar failures and the
+  camera score to a dead/occluded camera but not to dark/blurred (a blurred camera costs about 30 AP in either model),
+  and no advantage of the gate. The real corruption engine is not built. Results, caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
   `models/model1/docs/figures/model1_results_overview.png`. Corruption engine not built.
 
 - Both branches are merged into `main`. All D and R tasks are done except D6 (Phase 2 prep).

@@ -45,11 +45,15 @@ What this does and does not show (details and caveats in `docs/RUN_LOG.md`):
   lidar-only model is as good as either in dense fog, so the improvement over the baseline comes with the trunk and
   loss. Every ECE is far from the 0.05 target, which is defined with two sensors degraded and is not measured yet.
 - **Reliability scores:** the lidar score falls in fog the model never saw (median 0.8 to 0.42), also in M4b where it
-  is not used by the attention, so it is a by-product of training and not what produces the gain. The camera score is
-  effectively constant (0.83-0.84) in both runs, so the gate could not act on camera health.
-- **What is not shown:** that a reliability gate cannot help. STF fog degrades the lidar but leaves the camera usable;
-  injected sensor failures (the corruption engine, not built) are the fair test, after the camera reliability
-  estimator is fixed. One seed per model.
+  is not used by the attention, so it is a by-product of training and not what produces the gain. The camera score
+  stays at its clean level (0.83-0.84) in fog in both runs.
+- **Injected sensor failures** (a first exploratory probe on clear val, synthetic failures, one seed; `docs/RUN_LOG.md`):
+  the lidar score drops to about 0 for a sparse or blocked lidar and the camera score drops for a dead or occluded
+  camera, but the camera score does not notice a darkened or blurred camera, and a blurred camera costs about 30 AP
+  in either model. The gate gave no advantage (M5 is 5 AP below M4b with a sparse lidar, within the between-model
+  noise): setting r to about 0 drops the lidar stream entirely.
+- **What is not shown:** that a reliability gate cannot help. That needs the real corruption engine (physical failures,
+  test splits), a camera estimator trained to notice darkness or blur (a protocol decision) and more seeds.
 
 ## Data
 
