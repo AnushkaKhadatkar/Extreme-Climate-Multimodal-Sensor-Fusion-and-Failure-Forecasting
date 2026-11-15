@@ -39,8 +39,14 @@ def test_camera_failures():
     assert 0.5 < (occ == 0.5).all(axis=2).mean() < 0.7                       # about 60% grey
     blur, clean = run("cam_blur")["images"], sample()["images"]
     assert blur.std() < clean.std() * 0.3                                    # most of the contrast is gone
-    for name in ("cam_zeros", "cam_dark", "cam_blur", "cam_occlusion"):      # camera failures leave the lidar alone
-        assert np.array_equal(run(name)["points"], sample()["points"])
+    haze = run("cam_haze")["images"]
+    assert haze.min() >= 0.5 and haze.std() < clean.std() * 0.5              # floor lifted, contrast cut
+    motion = run("cam_motion_blur")["images"]
+    assert motion.std() < clean.std() * 0.3
+    cast = run("cam_color_cast")["images"]
+    assert np.allclose(cast[..., 0], clean[..., 0]) and cast[..., 2].mean() < 0.4 * clean[..., 2].mean()
+    for name in ("cam_zeros", "cam_dark", "cam_blur", "cam_occlusion", "cam_haze", "cam_motion_blur", "cam_color_cast"):
+        assert np.array_equal(run(name)["points"], sample()["points"])       # camera failures leave the lidar alone
 
 
 def test_lidar_failures():

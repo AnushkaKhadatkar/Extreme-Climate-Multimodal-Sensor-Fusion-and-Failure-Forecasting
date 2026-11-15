@@ -27,7 +27,15 @@ import numpy as np
 
 from rgfusion.modality_dropout import _drop_camera, _drop_lidar
 
-CONDITIONS = ["cam_zeros", "cam_occlusion", "cam_dark", "cam_blur", "lidar_sparse", "lidar_sector", "both_dark_sparse"]
+CONDITIONS = ["cam_zeros", "cam_occlusion", "cam_dark", "cam_blur", "lidar_sparse", "lidar_sector", "both_dark_sparse",
+              "cam_haze", "cam_motion_blur", "cam_color_cast"]
+
+# The last three are HELD-OUT camera failures: the M5p / M4bp variants (photometric dropout: dark + isotropic blur) never
+# train on them, so they measure whether the camera reliability score and the model generalise beyond the failures
+# they were trained on.
+#   cam_haze        washed-out, low-contrast image (img * 0.4 + 0.5): a fog-like lens, SYNTHETIC
+#   cam_motion_blur horizontal motion blur, 61 px kernel
+#   cam_color_cast  strong orange cast (channels x [1.0, 0.6, 0.3])
 
 
 def cam_zeros(data_dict, rng):
@@ -52,6 +60,27 @@ def cam_blur(data_dict, rng):
     if "images" in data_dict:
         img = np.ascontiguousarray(data_dict["images"], dtype=np.float32)
         data_dict["images"] = cv2.GaussianBlur(img, (0, 0), sigmaX=25.0)
+    return data_dict
+
+
+def cam_haze(data_dict, rng):
+    if "images" in data_dict:
+        data_dict["images"] = np.clip(data_dict["images"] * 0.4 + 0.5, 0.0, 1.0).astype(data_dict["images"].dtype)
+    return data_dict
+
+
+def cam_motion_blur(data_dict, rng):
+    if "images" in data_dict:
+        kernel = np.full((1, 61), 1.0 / 61, dtype=np.float32)
+        img = np.ascontiguousarray(data_dict["images"], dtype=np.float32)
+        data_dict["images"] = cv2.filter2D(img, -1, kernel, borderType=cv2.BORDER_REFLECT)
+    return data_dict
+
+
+def cam_color_cast(data_dict, rng):
+    if "images" in data_dict:
+        gain = np.array([1.0, 0.6, 0.3], dtype=np.float32)
+        data_dict["images"] = np.clip(data_dict["images"] * gain, 0.0, 1.0).astype(data_dict["images"].dtype)
     return data_dict
 
 
