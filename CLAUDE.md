@@ -77,8 +77,9 @@ _Last updated: 2026-11-13_
   (clear / light / dense fog; baseline 76.59 / 68.26 / 39.49). Baseline ECE now measured (0.182 / 0.200 / 0.263,
   over-confident); Model 1 is better calibrated (M4 0.168 / 0.180 / 0.108, M5 0.162 / 0.171 / 0.150) but the lidar-only
   model is as good, so it is not the camera or the gate; all still far from the 0.05 target. The AP gain in fog comes
-  with the camera, not the trunk; the gate itself is untested (M4b, camera without gate, is running). The camera
-  reliability estimator is constant. Results, caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
+  with the camera, not the trunk, and **not from the gate**: M4b (camera, no gate) scores 77.55 / 76.32 / 68.29, ECE
+  0.153 / 0.159 / 0.137, the same AP as M5 and slightly better calibrated. The camera reliability estimator is constant
+  (collapsed); a gate can only be tested fairly with injected sensor failures (corruption engine, not built). Results, caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
   `models/model1/docs/figures/model1_results_overview.png`. Corruption engine not built.
 
 - Both branches are merged into `main`. All D and R tasks are done except D6 (Phase 2 prep).

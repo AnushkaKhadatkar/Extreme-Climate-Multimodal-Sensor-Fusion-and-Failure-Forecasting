@@ -17,7 +17,7 @@ Full design and metric definitions: `docs/DESIGN.md`.
 | M3 | 200-frame slice: overfit test + epoch timing | done 2026-11-13. The committed config (`USE_AMP: True`) goes NaN; with `USE_AMP: False` training is finite. One epoch = 4 min 51 s. fp16-safe fix not applied: M4/M5 ran in fp32, a recorded deviation (`docs/RUN_LOG.md`) |
 | M4 | Lidar-only ablation, full training | done 2026-11-14 (one seed, fp32): moderate AP 74.57 / 70.97 / 44.09 (clear / light / dense fog) |
 | M5 | Full Model 1: train, best-on-val, three test splits; AP + ECE + D-ECE + reliability | done 2026-11-14 as a first run (one seed, fp32): 77.70 / 76.89 / 67.85; ECE 0.162 / 0.171 / 0.150 |
-| M4b | Ablation: camera without the reliability gate (`configs/model1_lidar_rgb_nogate.yaml`) | **running** (started 2026-11-14 10:33; about 7 h by estimate) |
+| M4b | Ablation: camera without the reliability gate (`configs/model1_lidar_rgb_nogate.yaml`) | done 2026-11-14 (one seed, fp32): 77.55 / 76.32 / 68.29, ECE 0.153 / 0.159 / 0.137: the same AP as M5, so the gate adds nothing measurable |
 | M6 | Writeup against the baseline | todo, after the baseline gate passes |
 
 ## Results so far
@@ -27,24 +27,29 @@ Full design and metric definitions: `docs/DESIGN.md`.
 Regenerate with `tools/make_results_figure.py` (reads the archived run logs). Moderate Car 3D AP (R40, IoU 0.5) and
 ECE on the three STF test splits; one seed per model, fp32:
 
-| Split | Baseline (PV-RCNN) AP | M4 lidar-only AP | M5 lidar + RGB AP | Baseline ECE | M4 ECE | M5 ECE |
-| --- | --- | --- | --- | --- | --- | --- |
-| Clear | 76.59 | 74.57 | 77.70 | 0.182 | 0.168 | 0.162 |
-| Light fog | 68.26 | 70.97 | 76.89 | 0.200 | 0.180 | 0.171 |
-| Dense fog | 39.49 | 44.09 | 67.85 | 0.263 | 0.108 | 0.150 |
+| Split | Baseline AP | M4 no camera AP | M4b camera, no gate AP | M5 camera + gate AP | Baseline ECE | M4 ECE | M4b ECE | M5 ECE |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Clear | 76.59 | 74.57 | 77.55 | 77.70 | 0.182 | 0.168 | 0.153 | 0.162 |
+| Light fog | 68.26 | 70.97 | 76.32 | 76.89 | 0.200 | 0.180 | 0.159 | 0.171 |
+| Dense fog | 39.49 | 44.09 | 68.29 | 67.85 | 0.263 | 0.108 | 0.137 | 0.150 |
 
 What this does and does not show (details and caveats in `docs/RUN_LOG.md`):
 
-- **AP:** with the same trunk, head, schedule and seed, the camera-off model (M4) behaves like the baseline in fog, so
-  most of M5's fog gain comes with the camera stream and gated fusion, not the lidar trunk.
-- **Calibration:** both Model 1 variants are better calibrated than the baseline, most of all in dense fog (0.263 down
+- **The camera accounts for the fog gain, not the gate.** The chain M4 (no camera) -> M4b (camera, no gate) -> M5
+  (camera + gate) uses the same trunk, head, schedule and seed. Adding the camera is worth +3 AP in clear weather, +5 in
+  light fog and +24 in dense fog; adding the reliability gate on top changes AP by +0.15, +0.57 and -0.44, which is
+  within what one seed can move. The camera-off model behaves like the baseline in fog.
+- **Calibration:** all Model 1 variants are better calibrated than the baseline, most of all in dense fog (0.263 down
   to 0.108-0.150). The baseline is over-confident (dense fog: confidence 0.43 for accuracy 0.16), Model 1 slightly
-  under-confident. But the lidar-only model is as well calibrated as M5, so this comes with the trunk and loss, not the
-  camera or the gate. Every ECE is still far from the 0.05 target, which is defined with two sensors degraded and is
-  not measured yet.
-- It does **not** show that the reliability gate matters (M4b, running, tests that).
-- The lidar reliability score falls in fog the model never saw (median 0.80 to 0.42), but the camera reliability
-  estimator is effectively constant (0.83), so it is not tracking camera health.
+  under-confident. The gate does not help: M4b is slightly better calibrated than M5 (by 0.009-0.013), and the
+  lidar-only model is as good as either in dense fog, so the improvement over the baseline comes with the trunk and
+  loss. Every ECE is far from the 0.05 target, which is defined with two sensors degraded and is not measured yet.
+- **Reliability scores:** the lidar score falls in fog the model never saw (median 0.8 to 0.42), also in M4b where it
+  is not used by the attention, so it is a by-product of training and not what produces the gain. The camera score is
+  effectively constant (0.83-0.84) in both runs, so the gate could not act on camera health.
+- **What is not shown:** that a reliability gate cannot help. STF fog degrades the lidar but leaves the camera usable;
+  injected sensor failures (the corruption engine, not built) are the fair test, after the camera reliability
+  estimator is fixed. One seed per model.
 
 ## Data
 

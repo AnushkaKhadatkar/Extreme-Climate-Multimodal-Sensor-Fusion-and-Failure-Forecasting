@@ -280,13 +280,77 @@ the ECE json, `MANIFEST.sha256`).
 
 ---
 
+## 2026-11-14 to 2026-11-15: M4b, camera without the reliability gate, fp32
+
+**Result: completed, exit 0, no NaN. Single run, single seed.**
+
+Setup: `cfgs/model1/model1_lidar_rgb_nogate.yaml` = the M5 config plus `FUSION.GATE_ENABLED: False` (the reliability
+scores are still estimated, trained and logged, but enter the attention bias as r = 1; invalid-pixel masking,
+auxiliary heads, reliability loss and modality dropout unchanged), `USE_AMP: False` by `sed` in the deployed copy,
+seed 666, batch 4, 80 epochs, same container recipe as M5 and M4. Started 2026-11-14 10:33 local, training ended
+about 16:55 (6 h 22 min), everything done 18:13. Best-on-val epoch **72**. Frames 1,847 / 946 / 786. Final epoch-average
+training loss 2.11, the same as M5's.
+
+Moderate Car 3D AP (R40, IoU 0.5), easy / hard in brackets for M4b:
+
+| Split | M4 no camera | **M4b camera, no gate** | M5 camera + gate | Camera adds (M4b - M4) | Gate adds (M5 - M4b) |
+| --- | --- | --- | --- | --- | --- |
+| Clear | 74.57 | **77.55** (81.21 / 72.58) | 77.70 | +2.98 | +0.15 |
+| Light fog | 70.97 | **76.32** (76.86 / 72.53) | 76.89 | +5.35 | +0.57 |
+| Dense fog | 44.09 | **68.29** (68.47 / 65.69) | 67.85 | **+24.20** | -0.44 |
+
+ECE and D-ECE (same definition as before):
+
+| Split | M4 ECE | **M4b ECE** | M5 ECE | Camera adds (M4b - M4) | Gate adds (M5 - M4b) | M4b D-ECE 0-20 / 20-40 / 40-70.4 m | M4b mean confidence / accuracy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Clear | 0.168 | **0.153** | 0.162 | -0.015 | +0.009 | 0.161 / 0.175 / 0.141 | 0.465 / 0.571 |
+| Light fog | 0.180 | **0.159** | 0.171 | -0.021 | +0.012 | 0.177 / 0.177 / 0.143 | 0.456 / 0.552 |
+| Dense fog | 0.108 | **0.137** | 0.150 | +0.029 | +0.013 | 0.108 / 0.145 / 0.140 | 0.351 / 0.358 |
+
+(Lower ECE is better, so a positive "adds" is worse calibration.)
+
+What the M4b estimators believe, per frame (it does **not** drive attention in M4b):
+
+| Split | r_lidar median (std) | r_cam median (std; distinct values) | camera attention weight (M4b / M5) |
+| --- | --- | --- | --- |
+| Clear | 0.818 (0.068) | 0.837 (0.019; 33) | 0.498 / 0.521 |
+| Light fog | 0.816 (0.187) | 0.837 (0.007; 24) | 0.509 / 0.547 |
+| Dense fog | 0.427 (0.283) | 0.837 (0.018; 40) | 0.575 / 0.627 |
+
+How to read this (hedged on purpose):
+
+- **The camera stream, not the gate, accounts for the gain.** M4b scores essentially the same AP as M5 on every split
+  (differences of +0.15, +0.57 and -0.44 AP, well inside what one seed can move), while adding the camera over the
+  lidar-only M4 is worth +3 AP in clear weather, +5 in light fog and **+24 in dense fog**. In this run the reliability
+  gate adds nothing measurable to detection accuracy beyond having the camera.
+- **The gate does not help calibration either: it is slightly worse.** M4b is better calibrated than M5 on all three
+  splits (by 0.009 to 0.013 ECE; small, one seed). The camera itself improves ECE in clear and light fog (-0.015,
+  -0.021) and worsens it in dense fog (+0.029, where the lidar-only M4 was best at 0.108). So there is **no
+  calibration gain from the gate, and the AP gain from the camera comes with a mixed calibration effect**.
+- **The reliability estimators still respond to fog without being used.** In M4b, where r never reaches the
+  attention, the lidar reliability still falls in dense fog (median 0.43 against 0.82 in clear weather; M5: 0.42
+  against 0.80), because the estimator is trained on its auxiliary target regardless. The model can flag lidar
+  degradation as a by-product, but nothing here shows that acting on it (gating) helps. Camera attention also rises
+  in dense fog without the gate (0.498 to 0.575), so the attention shift is learned, not gate-driven.
+- **The camera reliability estimator is constant in M4b as well** (median = max = 0.837, std 0.007-0.019), the
+  same collapse seen in M5, so in neither run could the gate act on camera health.
+- **What this does not show.** It does not show that a reliability gate cannot help. STF fog degrades the lidar but
+  mostly leaves the camera usable, and the gate's purpose is to react to a sensor that fails: injected sensor failures
+  (the corruption engine, not built) are the fair test, and the camera reliability estimator would have to be fixed
+  first. One seed per model; fp32 on a new software stack.
+
+Evidence: `run_logs/2026-11-14_M4b_nogate_fp32_seed666/` (same contents as the M4 and M5 archives, with
+`MANIFEST.sha256`).
+
+---
+
 ## Status after these runs
 
-M3, M4 and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation), the
-baseline's ECE is measured, and all of the above is committed on `model1/m3-run-setup-and-log` (pushed) except the
-baseline-ECE entry and the M4b run, which is in progress (camera without gate, started 2026-11-14 10:33).
+M3, M4, M4b and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation) and
+the baseline's ECE is measured. The ablation chain M4 (no camera) -> M4b (camera, no gate) -> M5 (camera + gate) says,
+for this setup: the camera accounts for the fog gain, the gate adds nothing measurable. Everything up to the baseline
+ECE entry is committed on `model1/m3-run-setup-and-log` (pushed); the M4b entry above is not yet committed.
 
-Not done, in rough order of value: the M4b result (does the gate do anything beyond the camera?); ECE with two
-modalities degraded (needs the corruption engine) and the other thesis metrics (lead time, worst-decile AP, recovery
-time); more seeds; an fp16-safe fix of the auxiliary heads; a fix for the constant camera reliability estimator; M6
-(writeup).
+Not done, in rough order of value: fix the constant camera reliability estimator; the corruption engine (the fair
+test of any gate, and the only way to measure ECE with two modalities degraded and the other thesis metrics: lead
+time, worst-decile AP, recovery time); more seeds; an fp16-safe fix of the auxiliary heads; M6 (writeup).
