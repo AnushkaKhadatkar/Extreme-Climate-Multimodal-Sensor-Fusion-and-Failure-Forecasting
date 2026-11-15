@@ -418,17 +418,68 @@ Evidence: `run_logs/2026-11-14_sensor_failure_probe_v1/` (probe logs, ECE json, 
 
 ---
 
+## 2026-11-14: gate-floor probe v2: a softer floor removes the gate's penalty, it does not create a benefit
+
+Why: probe v1 found that with a failed lidar the gate drives r_lidar to about 0, `stream_bias` clamps it at 1e-4 and
+the lidar stream is removed from the attention, and M5 scored 4-5 AP below the ungated M4b. This tests whether that is
+the cause. New config option `FUSION.GATE_R_FLOOR` (default 1e-4, so every earlier run and checkpoint behaves exactly
+as before; 3 new CPU tests, full suite 45 passed): the smallest r the gate uses. **No retraining**: the trained M5
+checkpoint (epoch 63, trained with floor 1e-4) is evaluated at eval-time floors 0.05, 0.2 and 0.5
+(`tools/run_gate_floor_probe.sh`, `tools/summarize_gate_floor_probe.py`) under the same synthetic failures on clear val
+(781 frames). Exploratory: val, synthetic failures, one seed, eval-time floor only.
+
+Moderate Car 3D AP:
+
+| Condition | M4b no gate | M5 floor 1e-4 (as trained) | M5 floor 0.05 | M5 floor 0.2 | M5 floor 0.5 |
+| --- | --- | --- | --- | --- | --- |
+| clean | 75.45 | 75.84 | 75.85 | 75.87 | 75.91 |
+| cam_zeros | 75.06 | 75.05 | 75.11 | 75.09 | 75.15 |
+| cam_occlusion | 74.78 | 75.50 | 75.50 | 75.55 | 75.05 |
+| cam_dark | 70.31 | 73.09 | 73.11 | 73.15 | 73.24 |
+| cam_blur | 47.37 | 44.22 | 44.26 | 44.35 | 45.41 |
+| lidar_sparse | 44.63 | 39.97 | 44.32 | 44.73 | 44.62 |
+| lidar_sector | 30.96 | 30.79 | 30.85 | 30.81 | 30.79 |
+| both_dark_sparse | 40.72 | 35.78 | 40.15 | 41.40 | 40.87 |
+
+ECE changes little with the floor (full tables in the archive): lidar_sparse 0.128 / 0.126 / 0.131 / 0.132 for floors
+1e-4 / 0.05 / 0.2 / 0.5 against 0.126 ungated; cam_blur stays at 0.197-0.210 against 0.126 ungated; both_dark_sparse
+rises from 0.124 to 0.144 at floor 0.5.
+
+How to read this (hedged on purpose):
+
+- **The penalty was the hard exclusion.** With floors of 0.05 to 0.5 the gated model recovers the 4-5 AP it lost with a
+  failed lidar (sparse lidar 39.97 to 44.3-44.7; both sensors degraded 35.78 to 40.2-41.4) and reaches the ungated
+  model's level (44.63 and 40.72). The camera attention for a failed lidar falls from 0.89 to 0.60-0.75, so the lidar
+  is heard again.
+- **It costs nothing elsewhere** at floors up to 0.2: clean 75.84 to 75.85-75.87, dead camera 75.05 to 75.09-75.11.
+  At 0.5 an occluded camera loses 0.45 AP and both-degraded ECE gets worse, so 0.5 is too soft; 0.05-0.2 is the
+  useful range (chosen on val under synthetic failures; any claim needs the test splits and no tuning on them).
+- **It does not make the gate better than no gate.** The best floors match M4b (44.7 against 44.6; 41.4 against 40.7;
+  +0.1 and +0.7 AP, inside the between-model noise of about 3 AP). So the gate with a sensible floor is harmless under
+  these failures, but there is still no evidence that it helps.
+- **The unsolved part is unchanged:** a blurred camera (about 44-45 AP against 75 clean), a darkened camera (73
+  against 75) and calibration under these failures are not helped by any floor, because the camera estimator does not
+  see dark or blur (r_cam stays at 0.83) and the floor is about what the gate does with r, not about what r knows.
+- **Not done:** retraining with a floor (an eval-time floor on a model trained without one is not the same thing, though
+  the equal-to-ungated result suggests little is lost), and the default stays 1e-4 so old runs reproduce.
+
+Evidence: `run_logs/2026-11-14_gate_floor_probe_v2/` (24 evaluation logs, ECE json, reliability jsonl, `summary.md`,
+`MANIFEST.sha256`).
+
+---
+
 ## Status after these runs
 
 M3, M4, M4b and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation), the
-baseline's ECE is measured, and a first sensor-failure probe has been run. The ablation chain M4 (no camera) -> M4b
-(camera, no gate) -> M5 (camera + gate) says, for this setup: the camera accounts for the fog gain, the gate adds
-nothing measurable in fog or under single-sensor failures. Everything up to the M4b entry is committed on
-`model1/m3-run-setup-and-log` (pushed); the probe and its tools are committed in the next push.
+baseline's ECE is measured, and two exploratory probes have been run (sensor failures; gate floor). The ablation chain
+M4 (no camera) -> M4b (camera, no gate) -> M5 (camera + gate) says, for this setup: the camera accounts for the fog
+gain, and the gate adds nothing measurable in fog or under single-sensor failures (and, with its original floor, costs
+a few AP when the lidar fails; a floor of 0.05-0.2 removes that cost). Everything up to the M4b entry is committed on
+`model1/m3-run-setup-and-log` (pushed); the probes and their tools are committed in the next push.
 
 Not done, in rough order of value: decide whether the camera reliability estimator should be trained on darkness/blur
-(a protocol decision) and try a softer floor on r; the corruption engine proper (physical fog, snow, icing,
-occlusion, calibration drift, dropout; evaluated on the test splits), which is the only way to measure ECE with two
-modalities degraded and the other thesis metrics (lead time, worst-decile AP, recovery time); more seeds (the
-between-model variation is of the order of 3 AP in the corrupted regime); an fp16-safe fix of the auxiliary heads; M6
-(writeup).
+(a protocol decision; it is the missing piece for a gate to matter, since r_cam does not see dark or blur); the
+corruption engine proper (physical fog, snow, icing, occlusion, calibration drift, dropout; evaluated on the test
+splits), which is the only way to measure ECE with two modalities degraded and the other thesis metrics (lead time,
+worst-decile AP, recovery time); more seeds (the between-model variation is of the order of 3 AP in the corrupted
+regime); an fp16-safe fix of the auxiliary heads; M6 (writeup).
