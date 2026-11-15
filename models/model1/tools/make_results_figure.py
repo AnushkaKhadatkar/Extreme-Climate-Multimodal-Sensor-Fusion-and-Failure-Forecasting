@@ -103,7 +103,7 @@ def grouped_bars(ax, series: list[tuple[str, list[float]]], fmt: str):
         xs = np.arange(len(vals)) + (j - (n - 1) / 2) * width
         ax.bar(xs, vals, width=width * 0.92, color=COLOR[key], edgecolor=SURFACE, linewidth=1.5, zorder=3)
         for x, v in zip(xs, vals):
-            ax.text(x, v, format(v, fmt), ha="center", va="bottom", fontsize=7.5, color=INK2, zorder=4)
+            ax.text(x, v, format(v, fmt), ha="center", va="bottom", fontsize=7.5 if n <= 3 else 6.6, color=INK2, zorder=4)
 
 
 def main() -> int:
@@ -172,8 +172,10 @@ def main() -> int:
         xs = np.arange(3) + (j - (len(rel_keys) - 1) / 2) * 0.07
         ax.plot(xs, vals, color=COLOR[k], linewidth=2, marker="o", markersize=7, markeredgecolor=SURFACE,
                 markeredgewidth=1.2, zorder=3)
-        for x, v in zip(xs, vals):
-            ax.text(x, v + 0.025, f"{v:.2f}", ha="center", fontsize=8, color=INK2)
+        for x, v in zip(xs, vals):                       # first run's labels above its points, the others below
+            above = j == 0
+            ax.text(x, v + (0.03 if above else -0.03), f"{v:.2f}", ha="center", va="bottom" if above else "top",
+                    fontsize=8, color=INK2)
     ax.set_ylim(0, 1.0)
     ax.set_xlim(-0.45, 2.45)
 
@@ -187,7 +189,7 @@ def main() -> int:
     fig.text(0.07, 0.03, "Read with care: the baseline differs from Model 1 in trunk, loss and software stack, so differences are "
              "not all due to the camera or the gate. ECE and reliability were measured on the test splits\n"
              "without any sensor corruption. *0.05 is the thesis target for ECE with two sensors degraded; that condition "
-             "is not measured here. Source: run_logs/ (M4, M5" + (", M4b" if "M4b" in runs else "") +
+             "is not measured here.\nSource: run_logs/ (M4, M5" + (", M4b" if "M4b" in runs else "") +
              (", baseline ECE" if base_ece else "") + "), baseline/README.md.", fontsize=8.5, color=MUTED, va="bottom")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
