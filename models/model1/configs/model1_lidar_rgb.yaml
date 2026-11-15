@@ -57,6 +57,7 @@ MODEL:
 
     FUSION:
         USE_CAMERA: True
+        GATE_R_FLOOR: 0.0001              # smallest r the gate uses; 1e-4 removes a distrusted stream, larger down-weights it
         IMAGE_SIZE: [512, 960]            # (H, W) the 1024x1920 image is resized to
         IMAGE_CHANNELS: 256               # FPN output, stride 8
         PRETRAINED_IMAGE_BACKBONE: True   # ImageNet ResNet-50, baked into the Docker image

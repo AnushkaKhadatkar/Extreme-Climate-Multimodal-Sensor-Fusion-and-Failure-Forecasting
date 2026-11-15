@@ -57,9 +57,12 @@ class GatedModalityAttention(nn.Module):
         return q, weights.float().mean(dim=2)
 
 
-def stream_bias(r: torch.Tensor, valid: torch.Tensor | None = None) -> torch.Tensor:
-    """r (B, M) reliability in (0, 1); valid (B, N, M) bool or None -> (B, N, M) logit bias."""
-    b = torch.log(r.clamp(min=1e-4)).unsqueeze(1)                                  # (B, 1, M)
+def stream_bias(r: torch.Tensor, valid: torch.Tensor | None = None, r_floor: float = 1e-4) -> torch.Tensor:
+    """r (B, M) reliability in (0, 1); valid (B, N, M) bool or None -> (B, N, M) logit bias.
+
+    r_floor is the smallest r the gate uses: with the default 1e-4 a stream with r near 0 is removed from the
+    softmax; a larger floor (FUSION.GATE_R_FLOOR) only down-weights a distrusted stream."""
+    b = torch.log(r.clamp(min=r_floor)).unsqueeze(1)                               # (B, 1, M)
     if valid is None:
         return b
     return b + torch.where(valid, torch.zeros_like(b), torch.full_like(b, LOG_EPS))
