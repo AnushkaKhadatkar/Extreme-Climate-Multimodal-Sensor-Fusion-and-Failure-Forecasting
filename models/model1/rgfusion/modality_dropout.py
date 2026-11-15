@@ -23,10 +23,19 @@ training only (OpenPCDet never augments at test time).
 
 from functools import partial
 
+import cv2
 import numpy as np
 
 LIDAR_MODES = ("sparse", "noise", "sector")
-CAMERA_MODES = ("zeros", "noise", "mask")
+CAMERA_MODES = ("zeros", "noise", "mask")      # the original set; "dark" and "blur" are opt-in (see below)
+
+# Opt-in generic PHOTOMETRIC camera modes, used only by the *_photo configs (the M5p / M4bp variants):
+#   dark : brightness scaled by a random factor in DARK_SCALE (default 0.03-0.5)
+#   blur : Gaussian blur with a random sigma in BLUR_SIGMA pixels (default 3-30)
+# They are generic degradations, not simulations of fog, snow or icing, but a heavy blur is lens-fog-like: recorded as a
+# protocol deviation in docs/RUN_LOG.md and DESIGN.md section 4. keep_cam stays 1.0 for them on purpose: the stream still
+# carries (degraded) information, and its reliability target then comes from how well the camera head does on that
+# very frame (aux_heads.ReliabilityTarget), not from a label saying "this frame was corrupted".
 
 
 def _drop_lidar(points: np.ndarray, mode: str, cfg, rng) -> tuple[np.ndarray, float]:
@@ -70,6 +79,13 @@ def _drop_camera(image: np.ndarray, mode: str, cfg, rng) -> tuple[np.ndarray, fl
         out = image.copy()
         out[y0:y0 + mh, x0:x0 + mw] = 0.5
         return out, 1.0 - (mh * mw) / (h * w)
+    if mode == "dark":
+        lo, hi = cfg.get("DARK_SCALE", [0.03, 0.5])
+        return (image * rng.uniform(lo, hi)).astype(image.dtype), 1.0
+    if mode == "blur":
+        lo, hi = cfg.get("BLUR_SIGMA", [3.0, 30.0])
+        blurred = cv2.GaussianBlur(np.ascontiguousarray(image, dtype=np.float32), (0, 0), sigmaX=float(rng.uniform(lo, hi)))
+        return blurred.astype(image.dtype), 1.0
     raise ValueError(f"unknown camera mode {mode!r}")
 
 

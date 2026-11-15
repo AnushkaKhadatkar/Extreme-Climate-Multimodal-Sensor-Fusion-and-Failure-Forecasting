@@ -45,6 +45,31 @@ def test_each_mode_and_keep_fraction():
         assert d["m1_keep_lidar"] == 1.0
 
 
+def test_photometric_camera_modes():
+    """dark and blur (the *_photo configs): the image changes the right way, the lidar is untouched, keep_cam stays 1
+    (the reliability target then comes from the camera head's own loss, not from a corruption label)."""
+    rng = np.random.default_rng(3)
+    for mode in ("dark", "blur"):
+        cfg = EasyDict({**CFG, "P_LIDAR": 0.0, "P_CAMERA": 1.0, "CAMERA_MODES": [mode],
+                        "DARK_SCALE": [0.03, 0.5], "BLUR_SIGMA": [3.0, 30.0]})
+        s = sample(rng)
+        pts, img = s["points"].copy(), s["images"].copy()
+        d = apply_modality_dropout(s, cfg, rng)
+        assert d["images"].shape == img.shape and d["images"].dtype == img.dtype
+        assert d["images"].min() >= 0.0 and d["images"].max() <= 1.0
+        assert d["m1_keep_cam"] == 1.0 and d["m1_keep_lidar"] == 1.0 and np.array_equal(d["points"], pts)
+        if mode == "dark":
+            assert d["images"].mean() < 0.55 * img.mean() and d["images"].mean() > 0.02 * img.mean()
+        else:
+            assert d["images"].std() < img.std()                       # contrast lost to the blur
+
+
+def test_default_modes_unchanged():
+    """Without dark/blur in CAMERA_MODES nothing about the original behaviour changes."""
+    from rgfusion.modality_dropout import CAMERA_MODES
+    assert tuple(CAMERA_MODES) == ("zeros", "noise", "mask")
+
+
 def test_clean_sample_untouched():
     rng = np.random.default_rng(2)
     s = sample(rng)
