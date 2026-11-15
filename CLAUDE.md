@@ -81,8 +81,13 @@ _Last updated: 2026-11-13_
   0.153 / 0.159 / 0.137, the same AP as M5 and slightly better calibrated. A first sensor-failure probe (synthetic, clear
   val, one seed; `tools/eval_corruptions.py`, RUN_LOG) found the lidar reliability score reacts to lidar failures and the
   camera score to a dead/occluded camera but not to dark/blurred (a blurred camera costs about 30 AP in either model),
-  and no advantage of the gate. The real corruption engine is not built. Results, caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
-  `models/model1/docs/figures/model1_results_overview.png`. Corruption engine not built.
+  and no advantage of the gate. Then M5p / M4bp (generic photometric camera dropout, a recorded deviation; 2026-11-15):
+  a blurred camera now costs about 3 AP instead of about 30 and it generalises to held-out motion blur, real fog does not
+  regress, but the no-gate control does the same, so the **gate adds nothing measurable**; the camera score falls for a
+  dead/occluded/blurred camera, not for dark, haze, motion blur or colour cast. Honest reading: gated fusion is not shown
+  to beat ungated fusion plus camera-failure augmentation; the thesis claim needs discussing with the advisor. Results,
+  caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
+  `models/model1/docs/figures/model1_results_overview.png`. The real corruption engine is not built.
 
 - Both branches are merged into `main`. All D and R tasks are done except D6 (Phase 2 prep).
 - Docker image `stf-openpcdet:pinned` is built on Dipin's machine, and data volume

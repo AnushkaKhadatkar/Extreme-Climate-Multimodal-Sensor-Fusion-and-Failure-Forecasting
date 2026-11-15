@@ -498,18 +498,99 @@ checked visually and the blur costs about 134 ms per frame but applies to only a
 
 ---
 
+## 2026-11-15: M5p and M4bp results (photometric camera dropout), judged against the pre-registered criteria
+
+**Both runs completed (exit 0, no NaN; 80 epochs each, side by side on one GPU, 19:50 to 06:00; best-on-val epochs 61
+and 59). One seed each.** Final epoch-average training loss 2.16 (M5p) and 2.15 (M4bp), like M5 and M4b (2.11).
+
+Test splits (moderate Car 3D AP, R40, IoU 0.5; frames 1,847 / 946 / 786 as required) and ECE:
+
+| Model | Clear AP | Light fog AP | Dense fog AP | Clear ECE | Light ECE | Dense ECE |
+| --- | --- | --- | --- | --- | --- | --- |
+| M5p (gate floor 0.1 + photometric dropout) | 79.41 | 77.41 | 69.11 | 0.167 | 0.167 | 0.140 |
+| M4bp (no gate + photometric dropout) | 77.26 | 76.12 | 67.85 | 0.168 | 0.160 | 0.151 |
+| M5 (gate, original) | 77.70 | 76.89 | 67.85 | 0.162 | 0.171 | 0.150 |
+| M4b (no gate, original) | 77.55 | 76.32 | 68.29 | 0.153 | 0.159 | 0.137 |
+
+(The "GATE ... FAIL" the script prints for M5p, 79.41 against the band 75.05-79.05, is the baseline's reproduction band and
+means nothing here.) M5p minus M4bp: +2.15 / +1.29 / +1.26 AP; D-ECE and reliability are in the archive.
+
+Per-frame reliability on the test splits (median): `r_cam` stays at its ceiling in fog (0.862 M5p, 0.856 M4bp in all three
+splits, as before); `r_lidar` in dense fog is **0.82 for M5p (no drop)**, 0.35 for M4bp, against 0.42 for M5 and 0.43 for M4b.
+
+Probe v3 (`tools/run_photo_probe.sh`, `tools/summarize_photo_probe.py`; clear val, 781 frames, SYNTHETIC failures, one
+seed; HELD-OUT = never trained on). Moderate AP (the full tables with ECE and r are in `summary.md`):
+
+| Condition | family | M4b | M5 | M4bp | M5p | M5p - M4bp | M4bp - M4b | M5p - M5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| clean | | 75.45 | 75.84 | 76.07 | 75.65 | -0.42 | +0.62 | -0.18 |
+| cam_zeros | | 75.06 | 75.05 | 73.14 | 71.81 | -1.33 | -1.93 | -3.25 |
+| cam_occlusion | | 74.78 | 75.50 | 73.83 | 72.49 | -1.33 | -0.95 | -3.00 |
+| cam_dark | in-family for p | 70.31 | 73.09 | 75.49 | 75.72 | +0.23 | +5.19 | +2.63 |
+| cam_blur | in-family for p | 47.37 | 44.22 | 73.09 | 71.85 | -1.23 | +25.72 | +27.64 |
+| cam_haze | HELD-OUT | 74.26 | 75.26 | 75.87 | 75.36 | -0.51 | +1.61 | +0.10 |
+| cam_motion_blur | HELD-OUT | 50.15 | 42.98 | 66.42 | 67.46 | +1.04 | +16.27 | +24.48 |
+| cam_color_cast | HELD-OUT | 73.40 | 74.73 | 75.53 | 74.36 | -1.17 | +2.13 | -0.38 |
+| lidar_sparse | | 44.63 | 39.97 | 43.92 | 43.80 | -0.12 | -0.71 | +3.83 |
+| lidar_sector | | 30.96 | 30.79 | 31.14 | 30.81 | -0.33 | +0.18 | +0.02 |
+| both_dark_sparse | | 40.72 | 35.78 | 42.86 | 41.85 | -1.01 | +2.14 | +6.07 |
+
+Median `r_cam` (M4bp / M5p) under camera failures: dead camera 0.00 / 0.00; occlusion 0.12 / 0.19; **blur 0.34 / 0.37**
+(was 0.84); **dark 0.82 / 0.86 (unchanged)**; haze 0.80 / 0.86; motion blur 0.86 / 0.82; colour cast 0.86 / 0.86.
+
+Judged against the criteria fixed before the runs (a difference under about 3 AP is not evidence):
+
+- **(a) Does r_cam now fall for the in-family failures? Partly.** It falls for blur (0.84 to 0.34-0.37) but **not for
+  darkness (0.82-0.86)**, although dark frames were in training. The model nevertheless now handles darkness (AP
+  70.3 / 73.1 to 75.5 / 75.7), so the camera head's loss on dark frames is no worse than usual and the target, which is
+  derived from that loss, stays high: r tracks whether the camera is still useful, not how the image looks. That is the
+  intended meaning of r, but it means r_cam does not flag an image that is merely dark.
+- **(b) Held-out failures, with r_cam falling and AP dropping less than the no-gate control? No.** r_cam does not fall for
+  haze, motion blur or colour cast (0.80-0.86). Haze and colour cast barely hurt any model (74-76 AP), so there is nothing
+  to protect against. Motion blur hurts the original models a lot (M4b 50.2, M5 43.0) and the photometric-dropout models
+  far less (M4bp 66.4, M5p 67.5): **the augmentation generalised to a held-out blur family (+16 and +24 AP)**, but
+  through the network, not through r_cam, and the gated M5p is no better than the ungated M4bp (+1.0).
+- **(c) Does the gate beat its no-gate control by clearly more than 3 AP? No, nowhere.** M5p minus M4bp is within
+  -1.3 to +1.0 AP under every camera failure, -0.1 with a sparse lidar and -1.0 with both degraded, and +2.2 / +1.3 / +1.3
+  on the real fog splits: all inside the noise, so **there is no evidence that the gate adds anything beyond the
+  augmentation and the camera**. (M5p minus M5 looks large under blur, motion blur and both-degraded because the original
+  M5 was never trained for them or had the hard floor, not because of the gate.)
+- **(d) Real fog: no regression.** The test-split AP and ECE are within noise of M5 and M4b, and the clean-val cost is
+  about zero (-0.4 and +0.6). Two things did change: with a dead or occluded camera the photometric variants lose about
+  2-3 AP (M4bp 73.1 and M5p 71.8 against 75.1; the gated M5p, whose floor of 0.1 lets a dead camera keep some weight,
+  is 1.3 below its control), and the lidar reliability of M5p no longer drops in dense fog (median 0.82; 0.35 for M4bp).
+- **Calibration:** no meaningful gain on the test splits (0.14-0.17 for every model, far from 0.05); on the probe, ECE
+  under camera failures is somewhat lower for the photometric variants (for example motion blur 0.20 / 0.23 against
+  0.34), still far from 0.05. No AP gain here comes with a calibration gain large enough to count.
+- **Caveats:** one seed per model; synthetic failures on clear val (not the test splits); the in-family numbers are
+  partly teaching to the test (the held-out ones are the fair ones); two runs shared a GPU.
+
+**Bottom line for the thesis:** the cheap fix works for robustness (a blurred camera costs about 3 AP instead of about 30,
+and it generalises to motion blur), but it is the augmentation that does the work. The reliability score and the gate
+do not add anything measurable, in fog or under injected failures, and the score does not flag failures it was not
+trained to flag. An honest reading is that this form of gated fusion is not shown to be better than ungated fusion with
+camera-failure augmentation. What r does show is real fog-sensitivity in the lidar score (M5, M4b, M4bp) and a camera
+score that follows camera usefulness (dead, occluded, blurred) but not appearance.
+
+Evidence: `run_logs/2026-11-15_M5p_photo_gate_floor0.1_fp32_seed666/`, `run_logs/2026-11-15_M4bp_photo_nogate_fp32_seed666/`,
+`run_logs/2026-11-15_photo_probe_v3/` (each with `MANIFEST.sha256`).
+
+---
+
 ## Status after these runs
 
-M3, M4, M4b and M5 are complete as first runs (one seed each, fp32, mixed precision off as a recorded deviation), the
-baseline's ECE is measured, and two exploratory probes have been run (sensor failures; gate floor). The ablation chain
-M4 (no camera) -> M4b (camera, no gate) -> M5 (camera + gate) says, for this setup: the camera accounts for the fog
-gain, and the gate adds nothing measurable in fog or under single-sensor failures (and, with its original floor, costs
-a few AP when the lidar fails; a floor of 0.05-0.2 removes that cost). Everything up to the M4b entry is committed on
-`model1/m3-run-setup-and-log` (pushed); the probes and their tools are committed in the next push.
+M3, M4, M4b, M5, M5p and M4bp are complete as first runs (one seed each, fp32, mixed precision off as a recorded
+deviation), the baseline's ECE is measured, and three exploratory probes have been run (sensor failures, gate floor,
+photometric dropout with held-out failures). The ablations say, for this setup: the camera accounts for the fog gain;
+camera-failure augmentation, not the reliability gate, accounts for robustness to a blurred camera (and it
+generalises to motion blur); the gate adds nothing measurable in fog or under injected failures. Everything up to the
+photometric-dropout plan is committed on `model1/m3-run-setup-and-log` (pushed); these results are committed in the next
+push.
 
-Not done, in rough order of value: decide whether the camera reliability estimator should be trained on darkness/blur
-(a protocol decision; it is the missing piece for a gate to matter, since r_cam does not see dark or blur); the
-corruption engine proper (physical fog, snow, icing, occlusion, calibration drift, dropout; evaluated on the test
-splits), which is the only way to measure ECE with two modalities degraded and the other thesis metrics (lead time,
-worst-decile AP, recovery time); more seeds (the between-model variation is of the order of 3 AP in the corrupted
-regime); an fp16-safe fix of the auxiliary heads; M6 (writeup).
+Not done, in rough order of value: a decision, with the team and the project's advisor, on what the thesis claims now (a
+gate that does not beat augmentation is a finding to report; the reliability scores' value may be as monitors, which
+the forecasting and failure-lead-time metrics need, more than as gates); the corruption engine proper (physical fog,
+snow, icing, occlusion, calibration drift, dropout; evaluated on the test splits), which is the only way to measure ECE
+with two modalities degraded and the other thesis metrics (lead time, worst-decile AP, recovery time); more seeds (the
+between-model variation is of the order of 3 AP in the corrupted regime); an fp16-safe fix of the auxiliary heads; M6
+(writeup).

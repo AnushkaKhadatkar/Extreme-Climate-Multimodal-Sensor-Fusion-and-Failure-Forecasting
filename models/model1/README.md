@@ -18,6 +18,7 @@ Full design and metric definitions: `docs/DESIGN.md`.
 | M4 | Lidar-only ablation, full training | done 2026-11-14 (one seed, fp32): moderate AP 74.57 / 70.97 / 44.09 (clear / light / dense fog) |
 | M5 | Full Model 1: train, best-on-val, three test splits; AP + ECE + D-ECE + reliability | done 2026-11-14 as a first run (one seed, fp32): 77.70 / 76.89 / 67.85; ECE 0.162 / 0.171 / 0.150 |
 | M4b | Ablation: camera without the reliability gate (`configs/model1_lidar_rgb_nogate.yaml`) | done 2026-11-14 (one seed, fp32): 77.55 / 76.32 / 68.29, ECE 0.153 / 0.159 / 0.137: the same AP as M5, so the gate adds nothing measurable |
+| M5p / M4bp | Variants with generic photometric camera dropout (dark, blur); M5p = gate with floor 0.1, M4bp = no-gate control (`configs/model1_lidar_rgb_photo.yaml`, `..._nogate_photo.yaml`) | done 2026-11-15 (one seed each, fp32): 79.41 / 77.41 / 69.11 and 77.26 / 76.12 / 67.85. A blurred camera now costs about 3 AP instead of about 30, but the ungated control does the same: the gate adds nothing measurable |
 | M6 | Writeup against the baseline | todo, after the baseline gate passes |
 
 ## Results so far
@@ -52,8 +53,21 @@ What this does and does not show (details and caveats in `docs/RUN_LOG.md`):
   camera, but the camera score does not notice a darkened or blurred camera, and a blurred camera costs about 30 AP
   in either model. The gate gave no advantage (M5 is 5 AP below M4b with a sparse lidar, within the between-model
   noise): setting r to about 0 drops the lidar stream entirely.
-- **What is not shown:** that a reliability gate cannot help. That needs the real corruption engine (physical failures,
-  test splits), a camera estimator trained to notice darkness or blur (a protocol decision) and more seeds.
+- **Photometric camera dropout (M5p / M4bp, a recorded protocol deviation; `docs/RUN_LOG.md`):** adding darkness and
+  blur to the camera dropout makes the models robust to a blurred camera (about 3 AP lost instead of about 30), and
+  that generalises to a held-out family it never saw, motion blur (+16 to +24 AP over the originals), with no regression
+  in real fog. But the **ungated control does just as well**: the gate adds nothing measurable (M5p minus M4bp is within
+  about 1 AP under every camera failure, and +1 to +2 on the fog splits, below the 3 AP noise level). The camera score
+  falls when the camera is dead, occluded or blurred, but not for darkness, haze, motion blur or a colour cast, and
+  the lidar score of M5p no longer drops in dense fog. Robustness here comes from the augmentation, not the gate.
+- **What is not shown:** that a reliability gate cannot help. That needs the real corruption engine (physical
+  failures, evaluated on the test splits), failures the augmentation cannot cover, and more seeds. An honest reading
+  today: this form of gated fusion is not shown to beat ungated fusion with camera-failure augmentation.
+
+![Model 1 under injected sensor failures](docs/figures/model1_failure_probe.png)
+
+Regenerate with `tools/make_probe_figure.py` (reads the probe outputs). Synthetic failures on clear validation frames,
+one seed per model; the shaded groups are failures the photometric-dropout variants never trained on.
 
 ## Data
 
