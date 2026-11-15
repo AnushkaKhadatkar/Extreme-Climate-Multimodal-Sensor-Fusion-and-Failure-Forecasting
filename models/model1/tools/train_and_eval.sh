@@ -9,20 +9,23 @@
 #       -Cmd "bash /workspace/models/model1/tools/train_and_eval.sh"
 #
 # Env:
-#   MODEL1_CFG  (default cfgs/model1/model1_lidar_rgb.yaml; the ablation is cfgs/model1/model1_lidar_only.yaml)
-#   EXTRA_TAG   (default model1) -- output/model1/<cfg name>/<EXTRA_TAG>/
-#   EPOCHS      (default: the config's 80; set only for smoke tests)
-#   SKIP_TRAIN=1  evaluate an existing run
-#   BEST_CKPT   override best-on-val selection
+#   MODEL1_CFG   (default cfgs/model1/model1_lidar_rgb.yaml; the ablation is cfgs/model1/model1_lidar_only.yaml)
+#   EXTRA_TAG    (default model1) -- output/model1/<cfg name>/<EXTRA_TAG>/
+#   EPOCHS       (default: the config's 80; set only for smoke tests)
+#   SKIP_TRAIN=1 evaluate an existing run
+#   BEST_CKPT    override best-on-val selection
+#   ENTRY_SCRIPT (default openpcdet_entry.py) -- set to openpcdet_entry_seed.py plus M1_SEED for an extra-seed run
+#                (OpenPCDet's --fix_random_seed hardcodes 666; the seed variant patches it, see that file's docstring)
 
 set -euo pipefail
 
 : "${OPENPCDET_ROOT:=/opt/OpenPCDet}"
 : "${MODEL1_CFG:=cfgs/model1/model1_lidar_rgb.yaml}"
 : "${EXTRA_TAG:=model1}"
+: "${ENTRY_SCRIPT:=openpcdet_entry.py}"
 TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$TOOLS_DIR/../../.." && pwd)"
-ENTRY="python $TOOLS_DIR/openpcdet_entry.py"
+ENTRY="python $TOOLS_DIR/$ENTRY_SCRIPT"
 CFG_NAME="$(basename "$MODEL1_CFG" .yaml)"
 OUT_DIR="$OPENPCDET_ROOT/output/model1/$CFG_NAME/$EXTRA_TAG"
 LOG_DIR="$OUT_DIR/model1_logs"
