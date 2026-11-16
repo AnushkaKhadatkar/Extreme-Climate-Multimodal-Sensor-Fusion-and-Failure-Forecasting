@@ -35,3 +35,18 @@ __pycache__/
 .DS_Store
 .venv/
 venv/
+
+# corruption/third_party/LiDAR_fog_sim/ is vendored from source (no pip package exists for it) and kept in git,
+# LUT pickles included (~1.7 MB; not regenerable from anything else in this repo without the vendored code
+# itself, see corruption/DESIGN.md section 7). Pruned on vendoring to only what simulate_fog/ParameterSet actually
+# need: removed file_lists/ (manifests for 9 other datasets' viewer tooling we never use, ~57 MB, mostly one
+# 26 MB nuScenes.pkl + 23 MB nuScenes.txt), .github/ (upstream's own CI), theory.py and pointcloud_viewer.py (a
+# PyQt5 GUI we don't run and don't want to pull as a dependency), and the SeeingThroughFog submodule + its nested
+# .git (failed to clone over SSH; unused -- our STF data comes through this repo's own baseline pipeline). If a
+# future re-vendor restores any of these, ignore them here rather than re-adding the bloat or a git-repo-in-repo.
+corruption/third_party/LiDAR_fog_sim/.git/
+corruption/third_party/LiDAR_fog_sim/SeeingThroughFog/
+corruption/third_party/LiDAR_fog_sim/file_lists/
+corruption/third_party/LiDAR_fog_sim/.github/
+corruption/third_party/LiDAR_fog_sim/theory.py
+corruption/third_party/LiDAR_fog_sim/pointcloud_viewer.py
