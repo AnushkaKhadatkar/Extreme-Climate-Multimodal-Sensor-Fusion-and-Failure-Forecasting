@@ -84,9 +84,11 @@ _Last updated: 2026-11-13_
   and no advantage of the gate. Then M5p / M4bp (generic photometric camera dropout, a recorded deviation; 2026-11-15):
   a blurred camera now costs about 3 AP instead of about 30 and it generalises to held-out motion blur, real fog does not
   regress, but the no-gate control does the same, so the **gate adds nothing measurable**; the camera score falls for a
-  dead/occluded/blurred camera, not for dark, haze, motion blur or colour cast. Honest reading: gated fusion is not shown
-  to beat ungated fusion plus camera-failure augmentation; the thesis claim needs discussing with the advisor. Results,
-  caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
+  dead/occluded/blurred camera, not for dark, haze, motion blur or colour cast. **Three-seed check (2026-11-16, 111/222
+  added to 666): the seed-666 AP/ECE edge for the gate does not survive -- it flips sign on dense fog (seed 111: -0.91 AP),
+  and the gap's seed-to-seed spread exceeds M4bp's own run-to-run variance. No reproducible gate advantage across 3 seeds.**
+  Honest reading: gated fusion is not shown to beat ungated fusion plus camera-failure augmentation; the thesis claim
+  needs discussing with the advisor. Results, caveats and raw-log locations: `models/model1/docs/RUN_LOG.md`; picture:
   `models/model1/docs/figures/model1_results_overview.png`. The real corruption engine is not built.
 
 - Both branches are merged into `main`. All D and R tasks are done except D6 (Phase 2 prep).

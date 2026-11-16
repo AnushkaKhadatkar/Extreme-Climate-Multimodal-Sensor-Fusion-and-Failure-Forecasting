@@ -577,20 +577,68 @@ Evidence: `run_logs/2026-11-15_M5p_photo_gate_floor0.1_fp32_seed666/`, `run_logs
 
 ---
 
+## 2026-11-15 to 2026-11-16: three-seed variance for M5p vs M4bp -- the gate-vs-no-gate gap is seed noise
+
+Why: the seed-666 M5p/M4bp pair showed a small, consistently positive AP gap for the gated model
+(+2.15 / +1.29 / +1.26 clear/light/dense), but one seed cannot say whether that reflects the gate or just that
+training run. Two more seeds (111, 222) of both configs were run (`tools/openpcdet_entry_seed.py`, which patches
+OpenPCDet's hardcoded `--fix_random_seed` value of 666 to read `M1_SEED` instead -- there is no native `--seed`
+argument; see the commit that added it). Both pairs completed cleanly (exit 0, no NaN, no Tracebacks on any of the
+four runs). One real infrastructure bug surfaced and was fixed along the way: the sequencing script
+(`tools/run_seed_queue.ps1`) crashed silently under Windows PowerShell 5.1 the moment a polled container's stderr
+happened to contain a routine torch warning (`$ErrorActionPreference = "Stop"` turns a native command's stderr into
+a terminating error -- the same bug class fixed earlier in `run_model1_docker.ps1`, missed here); it stalled for
+about 40 minutes between seed 111 finishing and seed 222 being noticed as never launched. Fixed, verified to
+reproduce and then not reproduce the exact crash, and re-run; no run data was lost.
+
+Moderate Car 3D AP, R40, IoU 0.5, all three seeds:
+
+| Split | M5p 666 | M5p 111 | M5p 222 | M5p mean (std) | M4bp 666 | M4bp 111 | M4bp 222 | M4bp mean (std) | gap 666 | gap 111 | gap 222 | gap mean (std) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Clear | 79.41 | 77.88 | 78.03 | 78.44 (0.69) | 77.26 | 77.88 | 77.14 | 77.43 (0.32) | +2.15 | +0.00 | +0.89 | +1.01 (0.88) |
+| Light fog | 77.41 | 77.20 | 77.21 | 77.27 (0.10) | 76.12 | 77.12 | 75.72 | 76.32 (0.59) | +1.29 | +0.08 | +1.49 | +0.95 (0.62) |
+| Dense fog | 69.11 | 68.79 | 68.79 | 68.90 (0.15) | 67.85 | 69.70 | 67.90 | 68.48 (0.86) | **+1.26** | **-0.91** | +0.89 | +0.41 (0.95) |
+
+(gap = M5p minus M4bp; std is the population standard deviation across the three seeds.)
+
+- **The gate's apparent advantage does not survive a second seed, let alone three.** On dense fog, where the seed-666
+  gap looked largest (+1.26), seed 111 flips the sign entirely (-0.91: the ungated model wins by nearly 1 AP). The
+  gap's own standard deviation across seeds (0.62-0.95) is comparable to or larger than its mean (0.41-1.01), and on
+  every split the gap is well inside the **range of M4bp's own run-to-run variation alone** (0.74-1.85 AP) -- i.e. a
+  single ungated model, retrained with a different seed, moves by as much as or more than the entire claimed gate
+  effect. This is the answer the seed-666 result alone could not give: there is no reproducible gate advantage here.
+- **M5p is more stable across seeds than M4bp is**, on every split (std 0.10-0.69 vs 0.32-0.86). That is a real,
+  consistent pattern, but it is the opposite of what "the gate improves accuracy" would predict -- it says the gate
+  mainly reduces the model's own run-to-run variance, not that it raises its average. That is a different, smaller
+  claim, and whether it is worth reporting as a finding (rather than noise in only 3 samples) needs more seeds to
+  say.
+- **ECE tells the same story**: seed-666 M5p ECE was lower than M4bp's on two of three splits by small margins
+  (clear -0.001, light -0.004, dense +0.013); seed 111's ECE for the two models is within 0.006-0.016 of each other
+  in both directions. No calibration gain survives either.
+- Caveats carried over from the single-seed result still apply in full: this is val-trained-with-dropout, fp32 on a
+  new stack, the test splits (not held out from model *selection*, since best-on-val only ever used val, but used for
+  every comparison here).
+
+Evidence: `run_logs/2026-11-15_M5p_seed111/`, `..._M4bp_seed111/`, `..._M5p_seed222/`, `..._M4bp_seed222/` (each with
+`MANIFEST.sha256`). The `run_seed_queue.ps1` fix is on `model1/m3-run-setup-and-log`, commit `f170ce4`.
+
+---
+
 ## Status after these runs
 
-M3, M4, M4b, M5, M5p and M4bp are complete as first runs (one seed each, fp32, mixed precision off as a recorded
-deviation), the baseline's ECE is measured, and three exploratory probes have been run (sensor failures, gate floor,
-photometric dropout with held-out failures). The ablations say, for this setup: the camera accounts for the fog gain;
-camera-failure augmentation, not the reliability gate, accounts for robustness to a blurred camera (and it
-generalises to motion blur); the gate adds nothing measurable in fog or under injected failures. Everything up to the
-photometric-dropout plan is committed on `model1/m3-run-setup-and-log` (pushed); these results are committed in the next
-push.
+M3, M4, M4b, M5, M5p and M4bp are complete, now with **three seeds each for the M5p/M4bp pair**, the baseline's ECE
+is measured, and three exploratory probes have been run (sensor failures, gate floor, photometric dropout with
+held-out failures). The ablations say, for this setup: the camera accounts for the fog gain; camera-failure
+augmentation, not the reliability gate, accounts for robustness to a blurred camera (and it generalises to motion
+blur); **the gate's apparent AP/ECE advantage does not survive a second seed and is smaller than M4bp's own
+run-to-run variance** -- i.e. it is noise, not a reproducible effect, in this setup. Everything up to the
+seed-111/222 results and the `run_seed_queue.ps1` fix is committed on `model1/m3-run-setup-and-log` (pushed).
 
-Not done, in rough order of value: a decision, with the team and the project's advisor, on what the thesis claims now (a
-gate that does not beat augmentation is a finding to report; the reliability scores' value may be as monitors, which
-the forecasting and failure-lead-time metrics need, more than as gates); the corruption engine proper (physical fog,
-snow, icing, occlusion, calibration drift, dropout; evaluated on the test splits), which is the only way to measure ECE
-with two modalities degraded and the other thesis metrics (lead time, worst-decile AP, recovery time); more seeds (the
-between-model variation is of the order of 3 AP in the corrupted regime); an fp16-safe fix of the auxiliary heads; M6
+Not done, in rough order of value: a decision, with the team and the project's advisor, on what the thesis claims now
+(a gate that is statistically indistinguishable from no gate, across three seeds, is a finding to report plainly, not
+soften; the reliability scores' value may be as monitors, which the forecasting and failure-lead-time metrics need,
+more than as gates); the corruption engine proper (physical fog, snow, icing, occlusion, calibration drift, dropout;
+evaluated on the test splits), which is the only way to measure ECE with two modalities degraded and the other
+thesis metrics (lead time, worst-decile AP, recovery time); whether M5p's lower run-to-run variance (not its mean) is
+itself worth investigating with more seeds; an fp16-safe fix of the auxiliary heads; M6
 (writeup).
