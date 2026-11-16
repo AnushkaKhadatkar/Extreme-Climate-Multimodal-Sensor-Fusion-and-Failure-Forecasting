@@ -31,12 +31,16 @@ if str(_FOG_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_FOG_SIM_DIR))
 
 import fog_simulation  # noqa: E402
-from fog_simulation import ParameterSet, simulate_fog  # noqa: E402
+from fog_simulation import ParameterSet, get_available_alphas, simulate_fog  # noqa: E402
 
-# The exact alphas with a shipped integral lookup table (confirmed by listing third_party/LiDAR_fog_sim/
-# integral_lookup_tables/original/ -- see DESIGN.md section 7, item 1). Sorted ascending: index 0 is the lightest
-# fog this channel can simulate with backscatter, the last is the densest.
-ALPHAS_WITH_LUT = (0.005, 0.01, 0.02, 0.03, 0.06, 0.1, 0.12, 0.15, 0.2)
+# Read from disk (fog_simulation.get_available_alphas(), which lists third_party/LiDAR_fog_sim/
+# integral_lookup_tables/original/) rather than hardcoded, so adding a LUT (as the fog-channel validation sweep
+# did, generating 0.04/0.05/0.07/0.08 around the real-dense-fog-matching alpha=0.06 -- see DESIGN.md section 5/9)
+# immediately extends what severity can resolve to, with no risk of this tuple silently drifting out of sync with
+# what is actually on disk. Originally hardcoded to the 9 shipped alphas; now reads whatever is actually there
+# (13, as of the validation sweep). Sorted ascending: index 0 is the lightest fog this channel can simulate with
+# backscatter, the last is the densest.
+ALPHAS_WITH_LUT = tuple(get_available_alphas())
 
 CHANNEL_NAME = "fog"
 
