@@ -177,15 +177,32 @@ channel next, so "two modalities degraded" has two real things to combine) and a
 
 ## 8. What ships in this phase, concretely
 
-- `corruption/fog.py`: the `apply(data_dict, severity, rng)` wrapper around Hahner's simulator, once Q1 above is
-  answered.
-- `corruption/validate_fog.py`: runs the validation in section 5 and prints/logs the comparison; refuses to call
-  the channel "validated" anywhere else in the repo until this has been run and passed against the agreed band.
-  Modelled on `baseline/scripts/05_verify_conversion.py`'s pattern: loud pass/fail, specific numbers, no silent
-  partial success.
-- Tests (CPU where possible, same split as `models/model1/tests/test_eval_corruptions.py`): shape/dtype
-  preservation, determinism per (frame, severity, seed), severity=0 is a no-op, severity-monotonic degradation
-  (more severity should not *improve* detectability of the point cloud, checked on a synthetic cloud, not asserted
-  on real AP).
+- `corruption/fog.py` -- **done.** `apply(data_dict, severity, rng, *, hard=True, soft=True, noise=10,
+  noise_variant="v1")`. severity maps onto `ALPHAS_WITH_LUT` (the 9 shipped alphas, 0.005-0.2) by index, not
+  interpolated onto the theoretical [0.003, 0.5] range -- see the module docstring and section 7 item 1 for why
+  interpolating would silently snap to a different alpha than requested with no warning.
+- **A second real bug found and fixed while writing this wrapper**, beyond the float32->float64 upcast in section
+  7: `fog_simulation.py`'s soft-target (fog backscatter) noise draws from a **module-level global**
+  `RNG = np.random.default_rng(seed=42)` set once at import time, not from any argument. Confirmed by reading the
+  source (every `RNG.integers`/`RNG.uniform`/`RNG.beta` call targets that one shared object) and then proven with a
+  deliberate before/after test: calling `fog.apply` for one frame, then for an unrelated frame, then for the first
+  frame again with the identical seeded `rng` gave **different output** the second time (confirmed by breaking the
+  fix and watching the test fail with a real `assert False`, not a crash) -- the fog added to a frame depended on
+  how many other fog calls had happened earlier in the process, which is exactly the "deterministic per (frame,
+  channel, severity, seed)" contract (section 3) silently violated. Fixed by reseeding that module global from the
+  passed-in `rng` at the start of every call; `test_apply_is_deterministic_for_the_same_frame_seed_and_severity`
+  is the regression test, written to fail without the fix (verified) and pass with it (verified).
+- `corruption/tests/test_fog.py` -- 11 tests, CPU only (uses the real vendored simulator and LUTs, no mocking):
+  severity->alpha mapping (always a shipped alpha, monotonic, hits both extremes), the determinism regression test
+  above, cross-frame variation (determinism must not mean every frame gets an identical draw), dtype/shape
+  preservation, images untouched, out-of-range severity raises, intensity attenuation direction (more severity ->
+  lower mean intensity, hard-target only to isolate the effect from backscatter noise). All 23 tests in
+  `corruption/tests/` (this file plus `test_base.py`) pass.
+- `corruption/validate_fog.py` -- **not yet written.** Runs the validation in section 5 and prints/logs the
+  comparison; refuses to call the channel "validated" anywhere else in the repo until this has been run and passed
+  against the agreed band. Modelled on `baseline/scripts/05_verify_conversion.py`'s pattern: loud pass/fail,
+  specific numbers, no silent partial success. **Blocked on section 7 item 3: the validation pass/fail band is a
+  team decision, not written yet because nobody has agreed on it.** Do not run a validation claiming "passed" or
+  "failed" before that band is agreed and recorded here.
 - Not shipped this phase: snow, the four "ours" channels, the schedule harness (section 4), any of the four metrics
   in section 6. Each is its own follow-on phase once fog is validated.
