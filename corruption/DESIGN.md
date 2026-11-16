@@ -206,3 +206,51 @@ channel next, so "two modalities degraded" has two real things to combine) and a
   "failed" before that band is agreed and recorded here.
 - Not shipped this phase: snow, the four "ours" channels, the schedule harness (section 4), any of the four metrics
   in section 6. Each is its own follow-on phase once fog is validated.
+
+## 9. Fog channel realism sweep (raw numbers only -- see section 7 item 3 and section 8: no pass/fail band exists yet)
+
+Ran the baseline's trained checkpoint (`checkpoint_epoch_67.pth`, clear/moderate 76.59) through `corruption/fog.py`
+on the clear test split (1,847 frames, never corrupted before this), one severity at a time, via
+`corruption/eval_entry.py` (generalises Model 1's env-var hook pattern to any OpenPCDet detector without touching
+`baseline/`). Real dense-fog moderate AP (`baseline/README.md`): **39.49**.
+
+First pass, the 9 shipped LUT alphas (0.005-0.2):
+
+| alpha | easy AP | moderate AP | hard AP |
+| --- | --- | --- | --- |
+| 0.005 | 76.84 | 76.01 | 72.86 |
+| 0.01 | 75.77 | 74.63 | 71.41 |
+| 0.02 | 72.14 | 70.49 | 66.80 |
+| 0.03 | 66.77 | 64.76 | 60.73 |
+| 0.06 | 43.63 | 41.68 | 38.95 |
+| 0.1 | 23.70 | 22.37 | 19.92 |
+| 0.12 | 17.98 | 16.78 | 14.68 |
+| 0.15 | 12.40 | 11.38 | 9.74 |
+| 0.2 | 7.49 | 6.76 | 5.59 |
+
+alpha=0.06 moderate AP (41.68) came closest to the real dense-fog target (39.49), 2.19 AP over -- but the next
+shipped alpha down, 0.03, moderate AP 64.76, is 25 AP away, and the next one up, 0.1, moderate AP 22.37, is 17 AP
+away. The curve is steep through this region and the 9 shipped alphas are too coarse there to say more than "the
+crossing point is near 0.06" -- which is why 4 more LUTs (0.04, 0.05, 0.07, 0.08) were generated (see git history,
+`corruption/third_party/LiDAR_fog_sim/integral_lookup_tables/original/`) to refine around it.
+
+Refined pass, the 5 new alphas bracketing 0.06:
+
+| alpha | easy AP | moderate AP | hard AP | moderate AP vs. real (39.49) |
+| --- | --- | --- | --- | --- |
+| 0.04 | 57.25 | 55.97 | 52.16 | +16.48 |
+| 0.05 | 50.53 | 48.44 | 45.54 | +8.95 |
+| 0.06 | 43.63 | 41.68 | 38.95 | +2.19 |
+| 0.07 | 39.21 | 38.27 | 34.59 | **-1.22** |
+| 0.08 | 34.61 | 33.74 | 29.92 | -5.75 |
+
+At this finer resolution, the real dense-fog moderate AP (39.49) falls **between alpha=0.06 and alpha=0.07**, closer
+to 0.07 (undershoots by 1.22 AP) than 0.06 (overshoots by 2.19 AP) -- i.e. the single alpha value that best matches
+real dense fog on this checkpoint is approximately **0.065-0.07**, not exactly 0.06 as the coarse sweep alone would
+suggest. This is a raw observation, not a validation verdict: whether "within ~1-2 AP" counts as the channel being
+realistic is exactly the pass/fail band section 7 item 3 says is a team decision, still not made. No alpha was
+chosen or hardcoded as "the" fog severity based on this -- `fog.py`'s `severity_to_alpha` still maps evenly across
+all 13 now-available alphas (see module docstring), not toward this crossing point specifically.
+
+Logs: `fog_sweep_logs/fog_sev_*.log` (coarse) and `fog_sweep_logs/fog_refined_*.log` (refined), both gitignored
+(run output, same convention as `baseline/output/`) -- numbers captured here instead.
