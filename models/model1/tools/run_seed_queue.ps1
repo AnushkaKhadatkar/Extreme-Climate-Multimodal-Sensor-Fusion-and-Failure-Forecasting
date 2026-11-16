@@ -16,11 +16,19 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
+# Windows PowerShell 5.1 turns a native command's stderr output into a terminating NativeCommandError under
+# $ErrorActionPreference = "Stop" (the same bug fixed in run_model1_docker.ps1). Model 1 containers routinely print a
+# benign torch UserWarning to stderr, so a bare "docker logs" with $ErrorActionPreference = "Stop" in scope crashed
+# this whole watcher the first time a polled container happened to have emitted one -- silently, since this script
+# runs detached via Start-Process with its own redirected log/err files, so the crash was invisible until this
+# session noticed seed 222 was never launched. Read logs with Continue in scope so stderr lines are data, not errors.
 function Wait-Finished($names) {
     while ($true) {
         $done = $true
         foreach ($n in $names) {
-            $log = docker logs $n 2>&1
+            $old = $ErrorActionPreference
+            $ErrorActionPreference = "Continue"
+            try { $log = docker logs $n 2>&1 } finally { $ErrorActionPreference = $old }
             if (-not ($log | Select-String 'finished.*exit=')) { $done = $false }
         }
         if ($done) { return }
